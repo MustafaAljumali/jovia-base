@@ -184,6 +184,7 @@ export const OpportunityListResponseSchema = z.object({
 export const IdempotencyKeySchema = z.string().trim().min(8).max(200);
 
 export type Compensation = z.infer<typeof CompensationSchema>;
+export type CompensationInput = z.infer<typeof CompensationInputSchema>;
 export type DirectOpportunityCommand = z.infer<typeof DirectOpportunityCommandSchema>;
 export type CanonicalOpportunity = z.infer<typeof CanonicalOpportunitySchema>;
 export type OpportunityListQuery = z.infer<typeof OpportunityListQuerySchema>;

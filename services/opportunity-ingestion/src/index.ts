@@ -2,6 +2,12 @@ import { AppError, type SourceRegistration } from "@jovia/contracts";
 
 export * from "./ports.js";
 export * from "./source-eligibility.js";
+export * from "./deduplication.js";
+export * from "./normalization/compensation.js";
+export * from "./normalization/html.js";
+export * from "./normalization/iso.js";
+export * from "./normalization/normalize.js";
+export * from "./normalization/signature.js";
 
 export interface OpportunityCandidate {
   externalId: string;
