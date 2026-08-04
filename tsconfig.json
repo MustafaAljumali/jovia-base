@@ -17,6 +17,7 @@
     { "path": "packages/ui" },
     { "path": "packages/testing" },
     { "path": "packages/database" },
+    { "path": "packages/ai" },
     { "path": "apps/api" },
     { "path": "apps/worker" }
   ]
