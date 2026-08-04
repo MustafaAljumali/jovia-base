@@ -1,0 +1,15 @@
+{
+  "name": "@jovia/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@jovia/config": "workspace:*",
+    "@jovia/contracts": "workspace:*",
+    "@jovia/observability": "workspace:*",
+    "fastify": "5.11.2"
+  }
+}

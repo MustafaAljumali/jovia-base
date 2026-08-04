@@ -1,0 +1,18 @@
+packages:
+  - apps/*
+  - packages/*
+  - services/*
+
+strictPeerDependencies: true
+
+overrides:
+  "@esbuild-kit/core-utils>esbuild": 0.25.12
+
+allowBuilds:
+  "@google/genai": false
+  esbuild: true
+  msgpackr-extract: false
+  protobufjs: false
+
+minimumReleaseAgeExclude:
+  - bullmq@6.0.7

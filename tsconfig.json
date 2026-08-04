@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./tsconfig.node.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true
+  },
+  "include": ["scripts/**/*.mjs", "scripts/**/*.ts", "vitest.config.ts"],
+  "references": [
+    { "path": "packages/contracts" },
+    { "path": "packages/config" },
+    { "path": "packages/security" },
+    { "path": "packages/observability" },
+    { "path": "packages/localization" },
+    { "path": "packages/notifications" },
+    { "path": "packages/ui" },
+    { "path": "packages/testing" },
+    { "path": "packages/database" },
+    { "path": "packages/ai" },
+    { "path": "packages/auth" },
+    { "path": "services/opportunity-ingestion" },
+    { "path": "services/opportunity-scoring" },
+    { "path": "services/opportunity-ranking" },
+    { "path": "services/proposal-generation" },
+    { "path": "services/notification-delivery" },
+    { "path": "apps/api" },
+    { "path": "apps/worker" }
+  ]
+}

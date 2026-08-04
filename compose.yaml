@@ -1,0 +1,37 @@
+name: jovia-foundation
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16@sha256:a36250871de0833b8757561c72f2477ef1ddd1101afa4e617fb552e0de514c6b
+    environment:
+      POSTGRES_DB: jovia
+      POSTGRES_PASSWORD: jovia_local
+      POSTGRES_USER: jovia
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jovia -d jovia"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - jovia_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine@sha256:978f0e01593e65eed801f2402944efcd936d43b5027e4908a7897baf88ed6241
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - jovia_redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  jovia_postgres_data:
+  jovia_redis_data:
