@@ -89,6 +89,7 @@ export const OpportunityAttributionSchema = z
 export const DirectOpportunityCommandSchema = z
   .object({
     publisherOrganizationId: z.uuid(),
+    publishingTermsVersion: z.string().trim().min(1).max(120),
     title: z.string().trim().min(3).max(240),
     descriptionHtml: z.string().min(1).max(100_000),
     employerName: z.string().trim().min(1).max(240),

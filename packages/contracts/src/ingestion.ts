@@ -51,7 +51,7 @@ export const SourceOpportunityRecordSchema = z
     location: OpportunityLocationSchema.extend({
       countryCodes: z.array(z.string()),
     }),
-    compensation: CompensationInputSchema.extend({ currency: z.string() }).optional(),
+    compensation: CompensationInputSchema.safeExtend({ currency: z.string() }).optional(),
     publishedAt: z.iso.datetime(),
     updatedAt: z.iso.datetime().optional(),
     expiresAt: z.iso.datetime().optional(),

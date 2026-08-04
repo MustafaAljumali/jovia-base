@@ -82,6 +82,7 @@ describe("shared contracts", () => {
   it("keeps requests strict and publishes all approved OpenAPI paths", () => {
     const invalid = DirectOpportunityCommandSchema.safeParse({
       publisherOrganizationId: "00000000-0000-4000-8000-000000000001",
+      publishingTermsVersion: "2026-08-05",
       title: "Platform engineer",
       descriptionHtml: "<p>Build Jovia</p>",
       employerName: "Jovia",

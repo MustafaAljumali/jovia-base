@@ -186,4 +186,5 @@ export type SourceIdentity = z.infer<typeof SourceIdentitySchema>;
 export type SourcePolicyVersion = z.infer<typeof SourcePolicyVersionSchema>;
 export type SourceExecutionContext = z.infer<typeof SourceExecutionContextSchema>;
 export type SourceOperation = z.infer<typeof SourceOperationSchema>;
+export type SourceIneligibilityReason = z.infer<typeof SourceIneligibilityReasonSchema>;
 export type SourceEligibilityDecision = z.infer<typeof SourceEligibilityDecisionSchema>;
