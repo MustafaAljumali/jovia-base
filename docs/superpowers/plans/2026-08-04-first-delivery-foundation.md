@@ -24,6 +24,16 @@ last_verified: 2026-08-04
 
 **Tech Stack:** Node.js 24.14.0, pnpm 11.20.0, TypeScript 6.0.3, React 19.2.8, Vite 8.2.0, Fastify 5.11.2, Zod 4.4.3, PostgreSQL 16, pgvector, Drizzle ORM 0.45.2, Redis, BullMQ 6.0.7, Pino 10.3.1, OpenTelemetry API 1.9.1, Vitest 4.1.10, ESLint 10.8.0, Prettier 3.9.6, and `@google/genai` 2.15.0.
 
+## Execution Status
+
+- Completed implementation and local non-container quality gates are marked `[x]`.
+- Historical red-state confirmation steps remain unchecked because those transient
+  failures were not separately preserved as evidence; the final green tests are
+  authoritative for the delivered behavior.
+- Docker is unavailable on this development device. The containerized PostgreSQL,
+  Redis, migration, and integration checks remain pending until the immutable CI
+  workflow completes on the pushed implementation branch.
+
 ## Global Constraints
 
 - The official repository is `MustafaAljumali/jovia-base`; the external prototype is a read-only migration source.
@@ -118,7 +128,7 @@ Documentation owns evidence:
 - Consumes: Accepted ADR-0001 and Node.js 24.14.0.
 - Produces: `pnpm install --frozen-lockfile`, `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`, and `pnpm security` as stable repository commands.
 
-- [ ] **Step 1: Add failing policy tests**
+- [x] **Step 1: Add failing policy tests**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -152,7 +162,7 @@ Run: `pnpm exec vitest run scripts/check-architecture.test.ts scripts/check-secr
 
 Expected: FAIL with module-resolution errors for both policy scripts.
 
-- [ ] **Step 3: Implement root tooling with exact versions and strict defaults**
+- [x] **Step 3: Implement root tooling with exact versions and strict defaults**
 
 `package.json` must contain exact versions and these scripts:
 
@@ -200,13 +210,13 @@ The secret script scans Git-tracked content only and rejects private-key markers
 GitHub tokens, Google API key formats, and committed `.env` files while allowing
 documented non-secret example values.
 
-- [ ] **Step 4: Install with pnpm 11.20.0 and create the frozen lockfile**
+- [x] **Step 4: Install with pnpm 11.20.0 and create the frozen lockfile**
 
 Run: `pnpm install --save-exact`
 
 Expected: installation succeeds, `pnpm-lock.yaml` is created, and no lifecycle script requires manual approval.
 
-- [ ] **Step 5: Run root policy tests and static gates**
+- [x] **Step 5: Run root policy tests and static gates**
 
 Run: `pnpm exec vitest run scripts/check-architecture.test.ts scripts/check-secrets.test.ts`
 
@@ -216,7 +226,7 @@ Run: `pnpm format && pnpm lint`
 
 Expected: zero lint errors and zero warnings.
 
-- [ ] **Step 6: Commit the workspace toolchain**
+- [x] **Step 6: Commit the workspace toolchain**
 
 ```powershell
 git add package.json pnpm-workspace.yaml pnpm-lock.yaml .node-version .npmrc .prettierrc.json .prettierignore eslint.config.mjs tsconfig.base.json tsconfig.node.json tsconfig.web.json tsconfig.json vitest.config.ts .env.example README.md scripts
@@ -269,7 +279,7 @@ git commit -S -m "chore: establish monorepo quality toolchain"
 - Consumes: Zod 4.4.3, Pino 10.3.1, OpenTelemetry API 1.9.1.
 - Produces: `loadApiConfig(env)`, `loadWorkerConfig(env)`, `createLogger(options)`, `runWithCorrelationId(id, fn)`, `getCorrelationId()`, `redactSensitive(value)`, `AppError`, `HealthResponseSchema`, `SourceRegistrationSchema`, and `SupportedLocaleSchema`.
 
-- [ ] **Step 1: Write fail-closed configuration and redaction tests**
+- [x] **Step 1: Write fail-closed configuration and redaction tests**
 
 ```ts
 it("requires a Gemini key and pinned model when Gemini is enabled", () => {
@@ -294,7 +304,7 @@ Run: `pnpm exec vitest run packages/config/src/env.test.ts packages/security/src
 
 Expected: FAIL because the package implementations do not exist.
 
-- [ ] **Step 3: Implement shared contracts and fail-closed config**
+- [x] **Step 3: Implement shared contracts and fail-closed config**
 
 Use Zod coercion and a cross-field refinement:
 
@@ -316,7 +326,7 @@ const WorkerEnvSchema = BaseEnvSchema.extend({
 
 `toRedactedConfig()` returns booleans indicating whether secrets are configured; it never returns secret values.
 
-- [ ] **Step 4: Implement correlation context and structured logging**
+- [x] **Step 4: Implement correlation context and structured logging**
 
 ```ts
 const storage = new AsyncLocalStorage<{ correlationId: string }>();
@@ -333,7 +343,7 @@ export function getCorrelationId(): string | undefined {
 Pino serializers must apply `redactSensitive`, emit `service`, `environment`,
 `correlationId`, and normalized error fields, and never serialize raw request bodies.
 
-- [ ] **Step 5: Implement locale, notification, UI-token, and test contracts**
+- [x] **Step 5: Implement locale, notification, UI-token, and test contracts**
 
 ```ts
 export const SupportedLocaleSchema = z.enum(["ar", "en", "fr", "es"]);
@@ -344,7 +354,7 @@ UI tokens contain only black, white, and neutral gray semantic values. Notificat
 contracts contain channel, priority, template ID, locale, recipient reference, and
 correlation ID without vendor-specific fields.
 
-- [ ] **Step 6: Run package tests, type checking, and build**
+- [x] **Step 6: Run package tests, type checking, and build**
 
 Run: `pnpm exec vitest run packages`
 
@@ -354,7 +364,7 @@ Run: `pnpm typecheck && pnpm build`
 
 Expected: project references compile without implicit `any` or unresolved exports.
 
-- [ ] **Step 7: Commit shared platform packages**
+- [x] **Step 7: Commit shared platform packages**
 
 ```powershell
 git add packages tsconfig.json
@@ -391,7 +401,7 @@ git commit -S -m "feat: add governed platform contracts"
 - Consumes: shared config, contracts, security, observability, localization, and UI tokens.
 - Produces: `createApiApp(dependencies)`, `GET /v1/health`, `createWorkerRuntime(dependencies)`, and a production web build with no Manus runtime.
 
-- [ ] **Step 1: Write API and worker lifecycle tests**
+- [x] **Step 1: Write API and worker lifecycle tests**
 
 ```ts
 it("returns a validated health response and correlation id", async () => {
@@ -418,7 +428,7 @@ Run: `pnpm exec vitest run apps/api/src/app.test.ts apps/worker/src/runtime.test
 
 Expected: FAIL because the composition roots are absent.
 
-- [ ] **Step 3: Implement Fastify API with correlation and normalized errors**
+- [x] **Step 3: Implement Fastify API with correlation and normalized errors**
 
 `createApiApp()` uses Fastify 5.11.2, registers request context before routes,
 validates health output with Zod, returns RFC 9457-style problem details for
@@ -433,20 +443,20 @@ app.get("/v1/health", async () => ({
 }));
 ```
 
-- [ ] **Step 4: Implement worker lifecycle without external work at import time**
+- [x] **Step 4: Implement worker lifecycle without external work at import time**
 
 Workers are created in `main.ts`, start only after configuration validates, handle
 `SIGINT` and `SIGTERM`, and close in reverse registration order. Unit tests use
 fake worker handles; Redis-backed handles are added with the database task.
 
-- [ ] **Step 5: Implement the minimal monochrome React shell**
+- [x] **Step 5: Implement the minimal monochrome React shell**
 
 The page identifies Jovia as an AI operating system for freelancers, exposes a
 semantic status region, supports system light/dark mode using neutral tokens, and
 contains no platform-integration claims. React Testing Library verifies the main
 heading and status region.
 
-- [ ] **Step 6: Run application tests and production builds**
+- [x] **Step 6: Run application tests and production builds**
 
 Run: `pnpm exec vitest run apps`
 
@@ -456,7 +466,7 @@ Run: `pnpm typecheck && pnpm build`
 
 Expected: API/worker TypeScript builds and Vite production build succeed.
 
-- [ ] **Step 7: Commit composition roots**
+- [x] **Step 7: Commit composition roots**
 
 ```powershell
 git add apps tsconfig.json
@@ -491,7 +501,7 @@ git commit -S -m "feat: add application composition roots"
 - Consumes: validated `DATABASE_URL` and `REDIS_URL` configuration.
 - Produces: `createDatabase(url)`, `SourceRegistryRepository`, forward-only migration `0000_foundation.sql`, pgvector extension verification, and `createBullMqWorkerHandle(options)`.
 
-- [ ] **Step 1: Write schema and repository tests**
+- [x] **Step 1: Write schema and repository tests**
 
 ```ts
 it("keeps new sources disabled until legal posture is executable", () => {
@@ -510,7 +520,7 @@ Run: `pnpm exec vitest run packages/database/src/schema/schema.test.ts`
 
 Expected: FAIL because the database package is absent.
 
-- [ ] **Step 3: Implement PostgreSQL-only schema and forward migration**
+- [x] **Step 3: Implement PostgreSQL-only schema and forward migration**
 
 The migration begins with:
 
@@ -525,7 +535,7 @@ attribution rule, polling floor, cache TTL, redistribution rule, owner,
 task, provider, model, prompt version, input/output/total tokens, cost in micro-USD,
 success, normalized error category, and timestamp.
 
-- [ ] **Step 4: Implement local containers with health checks and persistent volumes**
+- [x] **Step 4: Implement local containers with health checks and persistent volumes**
 
 `compose.yaml` defines `postgres` using a digest-pinned `pgvector/pgvector:pg16`
 image and `redis` using a digest-pinned Alpine image. Ports bind to loopback only.
@@ -543,13 +553,13 @@ Run: `pnpm --filter @jovia/database db:migrate && pnpm test:integration`
 Expected: migrations apply once, pgvector exists, the source repository passes,
 and Redis responds.
 
-- [ ] **Step 6: Implement BullMQ adapter and lifecycle test**
+- [x] **Step 6: Implement BullMQ adapter and lifecycle test**
 
 The adapter accepts queue name, Redis connection factory, processor, concurrency,
 and logger. It exposes the provider-neutral worker handle from Task 3 and emits
 correlation IDs from job data without logging job payloads.
 
-- [ ] **Step 7: Stop containers and commit infrastructure**
+- [x] **Step 7: Stop containers and commit infrastructure**
 
 Run: `docker compose down`
 
@@ -591,7 +601,7 @@ git commit -S -m "feat: add postgres and queue foundation"
 - Consumes: shared contracts, security, observability, Zod, and deterministic testing utilities.
 - Produces: `AiProvider`, `AiProviderRegistry`, `AiTaskRouter`, `CircuitBreaker`, `PromptRegistry`, `SafetyGuard`, `AiAuditSink`, `AiUsageSink`, `ProviderHealthRegistry`, and `FakeAiProvider`.
 
-- [ ] **Step 1: Write routing, failover, structure, and accounting tests**
+- [x] **Step 1: Write routing, failover, structure, and accounting tests**
 
 ```ts
 it("fails over after a retryable primary error and records both attempts", async () => {
@@ -619,7 +629,7 @@ Run: `pnpm exec vitest run packages/ai`
 
 Expected: FAIL because the AI package does not exist.
 
-- [ ] **Step 3: Implement provider contracts, registry, and task policies**
+- [x] **Step 3: Implement provider contracts, registry, and task policies**
 
 ```ts
 export interface AiProvider {
@@ -636,7 +646,7 @@ ordered fallbacks, timeout, max attempts, required capabilities, and safety poli
 Duplicate provider IDs and policies referring to unregistered providers fail at
 startup.
 
-- [ ] **Step 4: Implement timeout, retry, circuit breaker, and failover**
+- [x] **Step 4: Implement timeout, retry, circuit breaker, and failover**
 
 Retries use bounded exponential backoff with jitter supplied by an injectable
 random function. Timeouts use `AbortController`. Authentication, safety,
@@ -644,7 +654,7 @@ validation, and non-retryable client errors never retry. Circuit state is tracke
 per provider and model. Failover preserves the request ID, prompt version, output
 schema, and safety policy.
 
-- [ ] **Step 5: Implement structured output, prompt versioning, safety, and audit**
+- [x] **Step 5: Implement structured output, prompt versioning, safety, and audit**
 
 Structured responses validate through the request Zod schema before reaching
 business logic. Prompt IDs follow `<bounded-context>.<purpose>` and semantic
@@ -653,7 +663,7 @@ Audit records contain request ID, task, provider, model, prompt version, timesta
 attempt result, safety outcome, token usage, cost, and error category; they never
 contain secret values or raw prompts by default.
 
-- [ ] **Step 6: Implement normalized usage and cost accounting**
+- [x] **Step 6: Implement normalized usage and cost accounting**
 
 ```ts
 export function calculateCostMicrousd(usage: TokenUsage, price: TokenPrice): bigint {
@@ -668,7 +678,7 @@ export function calculateCostMicrousd(usage: TokenUsage, price: TokenPrice): big
 Unknown model pricing produces `costStatus: "unknown"` rather than fabricating a
 zero cost. Database-backed sinks implement the package ports in the composition root.
 
-- [ ] **Step 7: Run AI unit tests and commit the provider-neutral runtime**
+- [x] **Step 7: Run AI unit tests and commit the provider-neutral runtime**
 
 Run: `pnpm exec vitest run packages/ai && pnpm typecheck && pnpm security:architecture`
 
@@ -699,7 +709,7 @@ git commit -S -m "feat: add provider-neutral ai runtime"
 - Consumes: `AiProvider`, `ProviderRequest`, `ProviderResponse`, `ProviderStreamEvent`, validated Gemini configuration, and `@google/genai` 2.15.0.
 - Produces: `GeminiProvider`, `createGeminiClient(config)`, stable `gemini-3.6-flash` routing, streaming, structured output configuration, normalized usage, and health state.
 
-- [ ] **Step 1: Write adapter tests against a fake Gemini client**
+- [x] **Step 1: Write adapter tests against a fake Gemini client**
 
 ```ts
 it("maps a Gemini response into provider-neutral output and usage", async () => {
@@ -718,21 +728,21 @@ Run: `pnpm exec vitest run packages/ai/src/providers/gemini`
 
 Expected: FAIL because the adapter does not exist.
 
-- [ ] **Step 3: Implement the SDK boundary in `client.ts` only**
+- [x] **Step 3: Implement the SDK boundary in `client.ts` only**
 
 `client.ts` is the only file allowed to import `@google/genai`. It exposes a small
 Jovia-owned `GeminiClient` interface used by `provider.ts`. Generation uses the
 stable API and model `gemini-3.6-flash`, requests JSON MIME type when a structured
 schema exists, and maps SDK streaming chunks to `AsyncIterable` events.
 
-- [ ] **Step 4: Normalize errors, usage, safety, and health**
+- [x] **Step 4: Normalize errors, usage, safety, and health**
 
 Map timeouts, 429s, 5xx responses, authentication failures, content-safety blocks,
 and malformed outputs into `AiProviderError` categories. Health state derives from
 configuration, circuit state, last success, and last normalized failure; no paid
 probe runs solely for a health endpoint.
 
-- [ ] **Step 5: Run adapter tests and architecture scan**
+- [x] **Step 5: Run adapter tests and architecture scan**
 
 Run: `pnpm exec vitest run packages/ai/src/providers/gemini`
 
@@ -742,7 +752,7 @@ Run: `pnpm security:architecture`
 
 Expected: the only `@google/genai` import is `packages/ai/src/providers/gemini/client.ts`.
 
-- [ ] **Step 6: Commit the Gemini adapter**
+- [x] **Step 6: Commit the Gemini adapter**
 
 ```powershell
 git add packages/ai packages/config .env.example docs/architecture/ai-provider-runtime.md package.json pnpm-lock.yaml
@@ -784,7 +794,7 @@ git commit -S -m "feat: add gemini ai provider"
 - Consumes: shared identity, source, notification, AI, and observability contracts.
 - Produces: `Authenticator`, `SessionStore`, `AuthorizationPolicy`, `InMemoryAuthAdapter`, `OpportunityIngestionService`, `OpportunityScoringPort`, `OpportunityRankingPort`, `ProposalGenerationPort`, and `NotificationDeliveryPort`.
 
-- [ ] **Step 1: Write deterministic auth and legal-source tests**
+- [x] **Step 1: Write deterministic auth and legal-source tests**
 
 ```ts
 it("denies a capability that the actor does not hold", () => {
@@ -806,7 +816,7 @@ Run: `pnpm exec vitest run packages/auth services/opportunity-ingestion`
 
 Expected: FAIL because the auth and ingestion packages are absent.
 
-- [ ] **Step 3: Implement provider-neutral authentication**
+- [x] **Step 3: Implement provider-neutral authentication**
 
 Identity uses immutable Jovia actor IDs and external subject references without
 vendor names. Session records store opaque hashes rather than bearer tokens.
@@ -814,14 +824,14 @@ Authorization is deny-by-default. The in-memory adapter is deterministic and
 exported only for tests/local development; no production identity provider is
 selected in this batch.
 
-- [ ] **Step 4: Implement service ports with lawful-source enforcement**
+- [x] **Step 4: Implement service ports with lawful-source enforcement**
 
 The ingestion service checks mechanism, enabled state, legal posture, verification
 date, and rate policy before invoking a connector. The remaining services expose
 typed ports and result contracts without mock external platform claims. All
 cross-context dependencies enter through constructor-injected interfaces.
 
-- [ ] **Step 5: Run tests, architecture scan, and commit boundaries**
+- [x] **Step 5: Run tests, architecture scan, and commit boundaries**
 
 Run: `pnpm exec vitest run packages/auth services && pnpm typecheck && pnpm security:architecture`
 
@@ -849,7 +859,7 @@ git commit -S -m "feat: add auth and bounded service ports"
 - Consumes: all root scripts and container integration tests.
 - Produces: immutable GitHub Actions jobs for quality, integration, CodeQL, dependency review, and secret scanning.
 
-- [ ] **Step 1: Add a workflow-policy assertion to the architecture script**
+- [x] **Step 1: Add a workflow-policy assertion to the architecture script**
 
 ```js
 export function findMutableActionReferences(workflowText) {
@@ -865,7 +875,7 @@ Run: `pnpm exec vitest run scripts/check-architecture.test.ts`
 
 Expected: FAIL for the missing `findMutableActionReferences` export.
 
-- [ ] **Step 3: Implement immutable CI actions**
+- [x] **Step 3: Implement immutable CI actions**
 
 Pin these reviewed action commits:
 
@@ -884,7 +894,7 @@ integration job starts digest-pinned PostgreSQL/pgvector and Redis services, app
 migrations, and runs integration tests. CodeQL and dependency review use least-
 privilege permissions.
 
-- [ ] **Step 4: Document exact local and CI procedures**
+- [x] **Step 4: Document exact local and CI procedures**
 
 Operations documentation includes prerequisites, frozen installation, container
 startup, migration, tests, build, shutdown, expected health output, and recovery
@@ -901,7 +911,7 @@ Run: `docker compose up -d --wait postgres redis; pnpm test:integration; docker 
 
 Expected: integration tests pass and containers stop cleanly.
 
-- [ ] **Step 6: Commit CI and security gates**
+- [x] **Step 6: Commit CI and security gates**
 
 ```powershell
 git add .github scripts docs/security/quality-gates.md docs/operations/local-development.md docs/api/README.md README.md package.json pnpm-lock.yaml
@@ -928,7 +938,7 @@ git commit -S -m "ci: enforce foundation quality gates"
 - Consumes: the external prototype file list, official documentation authority, duplicate analysis, and all first-batch quality evidence.
 - Produces: one disposition row for every prototype file, documentation authority/status report, final check evidence, and a clean signed branch ready for review.
 
-- [ ] **Step 1: Generate and manually review the inventory**
+- [x] **Step 1: Generate and manually review the inventory**
 
 The CSV header is exact:
 
@@ -945,13 +955,13 @@ provider-neutral tests are prioritized for refactoring before reuse. No row clai
 a migration commit before that migration exists; the field is the explicit value
 `not_migrated_in_first_batch`.
 
-- [ ] **Step 2: Validate inventory coverage with a one-time local comparison**
+- [x] **Step 2: Validate inventory coverage with a one-time local comparison**
 
 Run a read-only comparison between the external prototype file list and CSV
 `source_path` values. Expected: missing count `0`, duplicate count `0`, unknown
 disposition count `0`.
 
-- [ ] **Step 3: Write the documentation status report**
+- [x] **Step 3: Write the documentation status report**
 
 The report records:
 
@@ -990,7 +1000,7 @@ git status --short
 Expected: every command exits zero, Docker services stop, and only the intended
 documentation changes remain before the final commit.
 
-- [ ] **Step 5: Mark completed plan checkboxes and commit documentation evidence**
+- [x] **Step 5: Mark completed plan checkboxes and commit documentation evidence**
 
 ```powershell
 git add docs
