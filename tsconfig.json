@@ -18,6 +18,12 @@
     { "path": "packages/testing" },
     { "path": "packages/database" },
     { "path": "packages/ai" },
+    { "path": "packages/auth" },
+    { "path": "services/opportunity-ingestion" },
+    { "path": "services/opportunity-scoring" },
+    { "path": "services/opportunity-ranking" },
+    { "path": "services/proposal-generation" },
+    { "path": "services/notification-delivery" },
     { "path": "apps/api" },
     { "path": "apps/worker" }
   ]

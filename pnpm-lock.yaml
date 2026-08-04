@@ -124,6 +124,8 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
 
+  packages/auth: {}
+
   packages/config:
     dependencies:
       zod:
@@ -187,6 +189,36 @@ importers:
   packages/testing: {}
 
   packages/ui: {}
+
+  services/notification-delivery:
+    dependencies:
+      '@jovia/notifications':
+        specifier: workspace:*
+        version: link:../../packages/notifications
+
+  services/opportunity-ingestion:
+    dependencies:
+      '@jovia/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+
+  services/opportunity-ranking:
+    dependencies:
+      '@jovia/opportunity-scoring':
+        specifier: workspace:*
+        version: link:../opportunity-scoring
+
+  services/opportunity-scoring:
+    dependencies:
+      '@jovia/opportunity-ingestion':
+        specifier: workspace:*
+        version: link:../opportunity-ingestion
+
+  services/proposal-generation:
+    dependencies:
+      '@jovia/opportunity-ingestion':
+        specifier: workspace:*
+        version: link:../opportunity-ingestion
 
 packages:
 
