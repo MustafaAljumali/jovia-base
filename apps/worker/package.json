@@ -1,0 +1,13 @@
+{
+  "name": "@jovia/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@jovia/config": "workspace:*",
+    "@jovia/observability": "workspace:*"
+  }
+}

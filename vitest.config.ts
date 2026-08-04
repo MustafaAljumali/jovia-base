@@ -9,6 +9,8 @@ export default defineConfig({
         "**/dist/**",
         "**/node_modules/**",
         "**/providers/gemini/client.ts",
+        "apps/*/src/main.ts*",
+        "apps/api/src/server.ts",
       ],
       include: ["apps/**/*.{ts,tsx}", "packages/**/*.ts", "services/**/*.ts"],
       provider: "v8",

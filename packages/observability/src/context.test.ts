@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getCorrelationId, runWithCorrelationId } from "./context.js";
+import { enterCorrelationId, getCorrelationId, runWithCorrelationId } from "./context.js";
 
 describe("correlation context", () => {
   it("preserves an id across asynchronous work and isolates calls", async () => {
@@ -13,5 +13,6 @@ describe("correlation context", () => {
 
   it("rejects an empty identifier", () => {
     expect(() => runWithCorrelationId(" ", () => undefined)).toThrow(/correlationId/u);
+    expect(() => enterCorrelationId("")).toThrow(/correlationId/u);
   });
 });

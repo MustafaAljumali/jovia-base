@@ -10,3 +10,8 @@ export function runWithCorrelationId<T>(correlationId: string, work: () => T): T
 export function getCorrelationId(): string | undefined {
   return storage.getStore()?.correlationId;
 }
+
+export function enterCorrelationId(correlationId: string): void {
+  if (!correlationId.trim()) throw new Error("correlationId must not be empty");
+  storage.enterWith({ correlationId });
+}
