@@ -53,5 +53,18 @@ pnpm install --frozen-lockfile
 pnpm check
 ```
 
-Local infrastructure and detailed procedures are added as part of the first
-foundation delivery. Real credentials never belong in this repository.
+Start local infrastructure and apply the forward-only foundation migration:
+
+```powershell
+docker compose up -d --wait postgres redis
+pnpm db:migrate
+pnpm db:check
+```
+
+Run `pnpm dev:web`, `pnpm dev:api`, and `pnpm dev:worker` in separate terminals.
+The public health contract is `GET http://127.0.0.1:4000/v1/health`.
+
+See `docs/operations/local-development.md` for the complete procedure and
+`docs/security/quality-gates.md` for enforced CI policy. Real credentials never
+belong in this repository; Gemini remains disabled until its environment contract
+validates an explicit credential and pinned stable model.

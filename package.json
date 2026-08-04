@@ -11,6 +11,11 @@
   "scripts": {
     "build": "tsc -b && pnpm --filter @jovia/web --if-present build",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm security",
+    "db:check": "pnpm --filter @jovia/database db:check",
+    "db:migrate": "pnpm --filter @jovia/database db:migrate",
+    "dev:api": "tsx apps/api/src/server.ts",
+    "dev:web": "pnpm --filter @jovia/web dev",
+    "dev:worker": "tsx apps/worker/src/main.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0",
