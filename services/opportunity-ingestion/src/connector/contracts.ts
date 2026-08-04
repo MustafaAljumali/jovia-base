@@ -63,6 +63,15 @@ export interface ConnectorRun {
   checkpoint: unknown;
 }
 
+export class DatasetSupersededError extends Error {
+  constructor(readonly sourceCode: string) {
+    super(
+      `${sourceCode === "himalayas" ? "Himalayas" : sourceCode} dataset changed during a partial run`,
+    );
+    this.name = "DatasetSupersededError";
+  }
+}
+
 export interface PageCommit {
   runId: string;
   sourceId: string;
@@ -102,8 +111,14 @@ export interface ConnectorRuntimePorts {
       policyId: string;
       correlationId: string;
       startedAt: Date;
+      restartFromBeginning?: boolean;
     }): Promise<ConnectorRun>;
     finish(runId: string, outcome: IngestionRunOutcome, finishedAt: Date): Promise<void>;
+    recordSupersededPage?(
+      runId: string,
+      raw: RawPayloadReference,
+      correlationId: string,
+    ): Promise<void>;
     reconcileCompleted?(runId: string, sourceCode: string, correlationId: string): Promise<void>;
   };
   limiter: {
@@ -142,6 +157,7 @@ export interface ConnectorRuntimePorts {
     input: { policy: SourcePolicyVersion; normalizedAt: Date },
   ): NormalizedOpportunity;
   clock: Clock;
+  requestTimeoutMs: number;
   sleep(milliseconds: number): Promise<void>;
   backoffMs(attempt: number): number;
 }

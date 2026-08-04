@@ -1,6 +1,7 @@
 import { AppError } from "@jovia/contracts";
 
 import { NormalizationError } from "../normalization/normalize.js";
+import { DatasetSupersededError } from "./contracts.js";
 import type {
   ConnectorRuntimePorts,
   FetchPlan,
@@ -80,6 +81,7 @@ export class ConnectorRunner {
       let committedPages = 0;
       let committedRecords = 0;
       let complete = false;
+      let restartCount = 0;
 
       while (!complete) {
         if (signal.aborted) throw signal.reason ?? new Error("connector run aborted");
@@ -95,7 +97,11 @@ export class ConnectorRunner {
                 officialRequestLimit: policy.polling.officialRequestLimit,
                 signal,
               });
-              return fetchFirstPage(connector, plan, signal);
+              const requestSignal = AbortSignal.any([
+                signal,
+                AbortSignal.timeout(this.ports.requestTimeoutMs),
+              ]);
+              return fetchFirstPage(connector, plan, requestSignal);
             },
             {
               maximumAttempts: 3,
@@ -136,6 +142,31 @@ export class ConnectorRunner {
               this.ports.normalize(record, { policy, normalizedAt: this.ports.clock.now() }),
             );
         } catch (error) {
+          if (error instanceof DatasetSupersededError) {
+            await this.ports.runs.recordSupersededPage?.(runId, raw, correlationId);
+            await this.ports.runs.finish(runId, "superseded", this.ports.clock.now());
+            runFinished = true;
+            if (restartCount >= 1) {
+              throw new AppError({
+                code: "source_dataset_unstable",
+                status: 503,
+                title: "Source dataset changed repeatedly during ingestion",
+              });
+            }
+            restartCount += 1;
+            const restarted = await this.ports.runs.start({
+              sourceCode,
+              policyId: policy.id,
+              correlationId,
+              startedAt: this.ports.clock.now(),
+              restartFromBeginning: true,
+            });
+            runId = restarted.id;
+            currentCheckpoint = undefined;
+            complete = false;
+            runFinished = false;
+            continue;
+          }
           await this.ports.quarantine.record({
             sourceCode,
             runId,

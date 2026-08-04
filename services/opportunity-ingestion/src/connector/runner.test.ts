@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { NormalizedOpportunity } from "../normalization/normalize.js";
 import type { EligibleSourceContext } from "../ports.js";
 import type { ConnectorRuntimePorts, OpportunityConnector, RawPage } from "./contracts.js";
+import { DatasetSupersededError } from "./contracts.js";
 import { ConnectorRunner } from "./runner.js";
 
 const checkpoint = { offset: 20, datasetUpdatedAt: "2026-08-05T00:00:00.000Z" };
@@ -166,6 +167,7 @@ function harness(options: { rawFailure?: Error; parseFailure?: Error } = {}) {
     metrics: { increment: vi.fn(), observe: vi.fn() },
     normalize: vi.fn(() => ({ contentSignature: "c".repeat(64) }) as NormalizedOpportunity),
     clock: { now: () => new Date("2026-08-05T01:00:00.000Z") },
+    requestTimeoutMs: 30_000,
     sleep: vi.fn(async () => undefined),
     backoffMs: () => 1,
   };
@@ -227,5 +229,38 @@ describe("ConnectorRunner", () => {
     ).rejects.toThrow("policy denied");
     expect(ports.connectors.get).not.toHaveBeenCalled();
     expect(ports.leases.acquire).not.toHaveBeenCalled();
+  });
+
+  it("closes a superseded run and restarts once from offset zero", async () => {
+    const { connector, ports, runner } = harness();
+    vi.mocked(connector.parse)
+      .mockImplementationOnce(() => {
+        throw new DatasetSupersededError("himalayas");
+      })
+      .mockReturnValueOnce([record]);
+    vi.mocked(ports.runs.start)
+      .mockResolvedValueOnce({ id: "00000000-0000-4000-8000-000000000010", checkpoint })
+      .mockResolvedValueOnce({
+        id: "00000000-0000-4000-8000-000000000011",
+        checkpoint: undefined,
+      });
+
+    await expect(
+      runner.run("himalayas", "superseded-test", new AbortController().signal),
+    ).resolves.toMatchObject({
+      runId: "00000000-0000-4000-8000-000000000011",
+      outcome: "completed",
+    });
+    expect(ports.runs.finish).toHaveBeenCalledWith(
+      "00000000-0000-4000-8000-000000000010",
+      "superseded",
+      expect.any(Date),
+    );
+    expect(ports.runs.start).toHaveBeenLastCalledWith(
+      expect.objectContaining({ restartFromBeginning: true }),
+    );
+    expect(connector.plan).toHaveBeenLastCalledWith(
+      expect.objectContaining({ checkpoint: undefined }),
+    );
   });
 });

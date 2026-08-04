@@ -13,6 +13,8 @@ export * from "./normalization/html.js";
 export * from "./normalization/iso.js";
 export * from "./normalization/normalize.js";
 export * from "./normalization/signature.js";
+export * from "./himalayas/connector.js";
+export * from "./himalayas/schema.js";
 
 export interface OpportunityCandidate {
   externalId: string;
