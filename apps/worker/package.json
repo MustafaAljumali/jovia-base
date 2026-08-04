@@ -8,6 +8,8 @@
   },
   "dependencies": {
     "@jovia/config": "workspace:*",
-    "@jovia/observability": "workspace:*"
+    "@jovia/observability": "workspace:*",
+    "bullmq": "6.0.7",
+    "ioredis": "6.0.0"
   }
 }

@@ -16,6 +16,7 @@
     { "path": "packages/notifications" },
     { "path": "packages/ui" },
     { "path": "packages/testing" },
+    { "path": "packages/database" },
     { "path": "apps/api" },
     { "path": "apps/worker" }
   ]
