@@ -1,0 +1,39 @@
+{
+  "name": "jovia",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=24.14.0 <25",
+    "pnpm": "11.20.0"
+  },
+  "scripts": {
+    "build": "tsc -b && pnpm --filter @jovia/web --if-present build",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm security",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings 0",
+    "security": "pnpm security:architecture && pnpm security:secrets && pnpm security:dependencies",
+    "security:architecture": "node scripts/check-architecture.mjs",
+    "security:dependencies": "pnpm audit --audit-level high",
+    "security:secrets": "node scripts/check-secrets.mjs",
+    "test": "vitest run --coverage",
+    "test:integration": "vitest run --project integration",
+    "test:unit": "vitest run --project unit",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.13.3",
+    "@vitest/coverage-v8": "4.1.10",
+    "eslint": "10.8.0",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.9.0",
+    "prettier": "3.9.6",
+    "tsx": "4.23.5",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.66.0",
+    "vitest": "4.1.10"
+  }
+}

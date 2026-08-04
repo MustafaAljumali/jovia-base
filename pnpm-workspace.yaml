@@ -1,0 +1,9 @@
+packages:
+  - apps/*
+  - packages/*
+  - services/*
+
+strictPeerDependencies: true
+
+allowBuilds:
+  esbuild: true

@@ -1,0 +1,11 @@
+.git/
+.worktrees/
+coverage/
+dist/
+node_modules/
+pnpm-lock.yaml
+
+# Governing documents are preserved byte-for-byte.
+*.md
+*.docx
+*.pdf
