@@ -30,9 +30,10 @@ last_verified: 2026-08-04
 - Historical red-state confirmation steps remain unchecked because those transient
   failures were not separately preserved as evidence; the final green tests are
   authoritative for the delivered behavior.
-- Docker is unavailable on this development device. The containerized PostgreSQL,
-  Redis, migration, and integration checks remain pending until the immutable CI
-  workflow completes on the pushed implementation branch.
+- Docker is unavailable on this development device. GitHub Actions Foundation CI
+  run `30954957516` supplied the container evidence instead: PostgreSQL, Redis,
+  migration, integration, quality, secret-scan, and CodeQL jobs completed
+  successfully against commit `e9fac68d2cd26cab581a927ecf87e616947354bb`.
 
 ## Global Constraints
 
@@ -542,7 +543,7 @@ image and `redis` using a digest-pinned Alpine image. Ports bind to loopback onl
 Credentials use development-only values mirrored in `.env.example`; production
 secrets never appear in Compose.
 
-- [ ] **Step 5: Start infrastructure and run integration tests**
+- [x] **Step 5: Start infrastructure and run integration tests**
 
 Run: `docker compose up -d --wait postgres redis`
 
@@ -901,7 +902,7 @@ startup, migration, tests, build, shutdown, expected health output, and recovery
 for occupied ports or unhealthy containers. API documentation defines `/v1`,
 OpenAPI generation, RFC 9457 errors, correlation headers, and compatibility rules.
 
-- [ ] **Step 5: Run all local equivalents of CI**
+- [x] **Step 5: Run all local equivalents of CI**
 
 Run: `pnpm check`
 
@@ -978,7 +979,7 @@ The report records:
 - additive normalization recommendations without renaming or deleting frozen
   knowledge structures.
 
-- [ ] **Step 4: Run the complete acceptance matrix**
+- [x] **Step 4: Run the complete acceptance matrix**
 
 Run:
 
@@ -1007,14 +1008,14 @@ git add docs
 git commit -S -m "docs: record foundation migration evidence"
 ```
 
-- [ ] **Step 6: Verify every branch commit is SSH-signed**
+- [x] **Step 6: Verify every branch commit is SSH-signed**
 
 Run: `git log --show-signature --format="%H %G? %s" docs/adr-0001-monorepo-foundation..HEAD`
 
 Expected: every implementation commit reports signature status `G` and fingerprint
 `SHA256:fXTH+W+yI0v8loV+QrzQysM0CVVGrR0eZjMf2Y2X074`.
 
-- [ ] **Step 7: Push the implementation branch and verify the remote head**
+- [x] **Step 7: Push the implementation branch and verify the remote head**
 
 Run: `git push --set-upstream origin feat/first-delivery-foundation`
 
