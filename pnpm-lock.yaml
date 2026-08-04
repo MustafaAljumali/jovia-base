@@ -204,6 +204,9 @@ importers:
       sanitize-html:
         specifier: 2.17.6
         version: 2.17.6
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
     devDependencies:
       '@types/sanitize-html':
         specifier: 2.16.1
