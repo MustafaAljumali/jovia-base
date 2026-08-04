@@ -23,14 +23,15 @@ export default defineConfig({
     projects: [
       {
         test: {
-          exclude: ["**/*.integration.test.{ts,tsx}"],
-          include: ["**/*.{test,spec}.{ts,tsx}"],
+          exclude: ["**/node_modules/**", "**/*.integration.test.{ts,tsx}"],
+          include: ["{apps,packages,services,scripts}/**/*.{test,spec}.{ts,tsx}"],
           name: "unit",
         },
       },
       {
         test: {
-          include: ["**/*.integration.test.{ts,tsx}"],
+          exclude: ["**/node_modules/**"],
+          include: ["{apps,packages,services}/**/*.integration.test.{ts,tsx}"],
           name: "integration",
           sequence: { concurrent: false },
           testTimeout: 30_000,
