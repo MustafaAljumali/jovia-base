@@ -265,15 +265,15 @@ importers:
 
   services/opportunity-scoring:
     dependencies:
-      '@jovia/opportunity-ingestion':
+      '@jovia/contracts':
         specifier: workspace:*
-        version: link:../opportunity-ingestion
+        version: link:../../packages/contracts
 
   services/proposal-generation:
     dependencies:
-      '@jovia/opportunity-ingestion':
+      '@jovia/contracts':
         specifier: workspace:*
-        version: link:../opportunity-ingestion
+        version: link:../../packages/contracts
 
 packages:
 

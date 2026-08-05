@@ -1,7 +1,7 @@
-import type { OpportunityCandidate } from "@jovia/opportunity-ingestion";
+import type { CanonicalOpportunity } from "@jovia/contracts";
 
 export interface OpportunityScore {
-  opportunity: OpportunityCandidate;
+  opportunity: CanonicalOpportunity;
   overall: number;
   dimensions: Readonly<
     Record<
@@ -22,7 +22,7 @@ export interface OpportunityScore {
 
 export interface OpportunityScoringPort {
   score(
-    opportunity: OpportunityCandidate,
+    opportunity: CanonicalOpportunity,
     actorId: string,
     signal?: AbortSignal,
   ): Promise<OpportunityScore>;

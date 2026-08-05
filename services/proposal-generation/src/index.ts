@@ -1,4 +1,4 @@
-import type { OpportunityCandidate } from "@jovia/opportunity-ingestion";
+import type { CanonicalOpportunity } from "@jovia/contracts";
 
 export interface ProposalDraft {
   subject?: string;
@@ -10,7 +10,7 @@ export interface ProposalDraft {
 export interface ProposalGenerationPort {
   draft(input: {
     actorId: string;
-    opportunity: OpportunityCandidate;
+    opportunity: CanonicalOpportunity;
     portfolioItemIds: readonly string[];
     targetRateMicrousd: bigint;
     correlationId: string;
