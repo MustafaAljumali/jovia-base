@@ -2,6 +2,7 @@ import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  createS3RawPayloadStore,
   S3RawPayloadStore,
   validateRawPayloadStorageConfig,
   type S3ClientPort,
@@ -112,5 +113,68 @@ describe("S3RawPayloadStore", () => {
         region: "eu-central-1",
       }),
     ).toThrow("credential provider");
+  });
+
+  it("constructs a development store only after validating required configuration", async () => {
+    await expect(
+      createS3RawPayloadStore(
+        {
+          environment: "development",
+          bucket: "jovia-raw-development",
+          region: "eu-central-1",
+        },
+        { now: () => new Date("2026-08-05T00:00:00.000Z") },
+      ),
+    ).resolves.toBeInstanceOf(S3RawPayloadStore);
+    await expect(
+      createS3RawPayloadStore({ environment: "development", region: "eu-central-1" }),
+    ).rejects.toThrow("RAW_PAYLOAD_BUCKET");
+  });
+
+  it("normalizes approved endpoints and rejects invalid buckets and missing regions", () => {
+    expect(
+      validateRawPayloadStorageConfig({
+        environment: "production",
+        bucket: "jovia-raw-production",
+        region: "eu-central-1",
+        endpoint: "https://s3.jovia.dev/private/path",
+        approvedEndpointHosts: ["s3.jovia.dev"],
+        credentialProviderAvailable: true,
+      }),
+    ).toMatchObject({ endpoint: "https://s3.jovia.dev" });
+    expect(() =>
+      validateRawPayloadStorageConfig({
+        environment: "test",
+        bucket: "127.0.0.1",
+        region: "eu-central-1",
+      }),
+    ).toThrow("valid private S3 bucket");
+    expect(() =>
+      validateRawPayloadStorageConfig({ environment: "test", bucket: "jovia-raw-test" }),
+    ).toThrow("RAW_PAYLOAD_REGION");
+  });
+
+  it("fails before storage for invalid timestamps or unsafe object-key segments", async () => {
+    const { store } = harness();
+    await expect(
+      store.put({
+        sourceCode: "himalayas",
+        runId: "run-1",
+        pageSequence: 0,
+        fetchedAt: "not-a-date",
+        contentType: "application/json",
+        bytes: new Uint8Array(),
+      }),
+    ).rejects.toThrow("valid timestamp");
+    await expect(
+      store.put({
+        sourceCode: "---",
+        runId: "run-1",
+        pageSequence: 0,
+        fetchedAt: "2026-08-05T00:00:00.000Z",
+        contentType: "application/octet-stream",
+        bytes: new Uint8Array(),
+      }),
+    ).rejects.toThrow("segment is empty");
   });
 });

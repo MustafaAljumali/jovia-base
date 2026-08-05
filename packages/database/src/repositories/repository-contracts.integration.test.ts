@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
-import type { RawPayloadReference } from "@jovia/contracts";
+import type { DirectOpportunityCommand, RawPayloadReference } from "@jovia/contracts";
 import type { NormalizedOpportunity, PageCommit } from "@jovia/opportunity-ingestion";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -262,6 +262,156 @@ describe.runIf(enabled)("PostgreSQL opportunity repository contracts", () => {
       publisherOrganizationId: organizationId,
       attribution: { source: "jovia-direct" },
       provenance: [expect.objectContaining({ externalId })],
+    });
+
+    const replacementExternalId = `direct-replacement-${randomUUID()}`;
+    const replacementNormalized: NormalizedOpportunity = {
+      ...normalizedDirect,
+      externalId: replacementExternalId,
+      title: "Replacement Platform Engineer",
+      contentSignature: createHash("sha256").update(replacementExternalId).digest("hex"),
+      originalUrl: `https://jovia.dev/opportunities/${replacementExternalId}`,
+      applicationUrl: `https://jovia.dev/opportunities/${replacementExternalId}`,
+    };
+    const replacementCommand: DirectOpportunityCommand = {
+      publisherOrganizationId: organizationId,
+      publishingTermsVersion: "2026-08-05",
+      title: replacementNormalized.title,
+      descriptionHtml: replacementNormalized.descriptionHtml,
+      employerName: replacementNormalized.employerName,
+      engagementType: replacementNormalized.engagementType,
+      experienceLevels: replacementNormalized.experienceLevels,
+      categories: replacementNormalized.categories,
+      technologies: replacementNormalized.technologies,
+      languages: replacementNormalized.languages,
+      location: replacementNormalized.location,
+      publishedAt: replacementNormalized.publishedAt,
+      applicationUrl: replacementNormalized.applicationUrl,
+      extension: {},
+    };
+    const replacement = await opportunities.commitReplace({
+      actor: { id: actorId },
+      opportunityId: result.id,
+      idempotencyKey: `replace-key-${randomUUID()}`,
+      requestSha256: createHash("sha256").update(replacementExternalId).digest("hex"),
+      command: replacementCommand,
+      source: {
+        decision: { eligible: true, sourceCode: "jovia-direct", policyId: source.policy.id },
+        context: source,
+      },
+      raw: raw(`direct-replace-${actorId}`, replacementExternalId),
+      normalized: replacementNormalized,
+      correlationId: replacementExternalId,
+    });
+    expect(replacement).toMatchObject({ title: "Replacement Platform Engineer" });
+    const [replacedState] = await sql<{ deletion_state: string; tombstone_reason: string }[]>`
+      SELECT deletion_state, tombstone_reason FROM opportunities WHERE id = ${result.id}
+    `;
+    expect(replacedState).toEqual({
+      deletion_state: "tombstoned",
+      tombstone_reason: "publisher_replaced",
+    });
+
+    const removeInput = {
+      actor: { id: actorId },
+      opportunityId: replacement.id,
+      organizationId,
+      idempotencyKey: `remove-key-${randomUUID()}`,
+      requestSha256: createHash("sha256").update(`remove:${replacement.id}`).digest("hex"),
+      source: {
+        decision: {
+          eligible: true as const,
+          sourceCode: "jovia-direct",
+          policyId: source.policy.id,
+        },
+        context: source,
+      },
+      correlationId: `remove-${replacementExternalId}`,
+      occurredAt: new Date("2026-08-05T03:00:00.000Z"),
+    };
+    const removed = await opportunities.commitRemove(removeInput);
+    const replayedRemoval = await opportunities.commitRemove(removeInput);
+    expect(removed).toMatchObject({ id: replacement.id, deletionState: "tombstoned" });
+    expect(replayedRemoval.id).toBe(removed.id);
+    const [atomicEvidence] = await sql<{ audits: number; events: number; idempotency: number }[]>`
+      SELECT
+        (SELECT count(*)::int FROM opportunity_audits
+          WHERE opportunity_id IN (${result.id}, ${replacement.id})
+            AND action = 'tombstoned') AS audits,
+        (SELECT count(*)::int FROM outbox_events
+          WHERE opportunity_id IN (${result.id}, ${replacement.id})
+            AND event_type = 'opportunity.tombstoned.v1') AS events,
+        (SELECT count(*)::int FROM opportunity_idempotency
+          WHERE actor_id = ${actorId} AND opportunity_id = ${replacement.id}) AS idempotency
+    `;
+    expect(atomicEvidence).toEqual({ audits: 2, events: 2, idempotency: 2 });
+  });
+
+  it("expires due opportunities and reconciles source removals through audited outbox state", async () => {
+    const externalId = `lifecycle-${randomUUID()}`;
+    const signature = createHash("sha256").update(externalId).digest("hex");
+    const run = await ingestion.runs.start({
+      sourceCode: "himalayas",
+      policyId: HIMALAYAS_POLICY_ID,
+      correlationId: externalId,
+      startedAt: new Date("2026-08-05T01:00:00.000Z"),
+      restartFromBeginning: true,
+    });
+    await ingestion.pageTransactions.commit(
+      pageCommit(
+        run.id,
+        0,
+        {
+          ...normalized(externalId, signature),
+          expiresAt: "2026-08-05T02:00:00.000Z",
+        },
+        { offset: 20 },
+      ),
+    );
+    await ingestion.runs.finish(run.id, "completed", new Date("2026-08-05T01:01:00.000Z"));
+    const [persisted] = await sql<{ opportunity_id: string; provenance_id: string }[]>`
+      SELECT pr.opportunity_id, pr.id AS provenance_id
+      FROM opportunity_provenance pr WHERE pr.external_id = ${externalId}
+    `;
+    if (!persisted) throw new Error("lifecycle opportunity fixture was not persisted");
+
+    await expect(
+      opportunities.expireDue({ limit: 100, occurredAt: new Date("2026-08-05T03:00:00.000Z") }),
+    ).resolves.toBeGreaterThanOrEqual(1);
+    const [expired] = await sql<{ lifecycle: string; audits: number; events: number }[]>`
+      SELECT o.lifecycle,
+        (SELECT count(*)::int FROM opportunity_audits a
+          WHERE a.opportunity_id = o.id AND a.action = 'expired') AS audits,
+        (SELECT count(*)::int FROM outbox_events e
+          WHERE e.opportunity_id = o.id AND e.event_type = 'opportunity.expired.v1') AS events
+      FROM opportunities o WHERE o.id = ${persisted.opportunity_id}
+    `;
+    expect(expired).toEqual({ lifecycle: "expired", audits: 1, events: 1 });
+
+    const emptyRun = await ingestion.runs.start({
+      sourceCode: "himalayas",
+      policyId: HIMALAYAS_POLICY_ID,
+      correlationId: `empty-${externalId}`,
+      startedAt: new Date("2026-08-05T04:00:00.000Z"),
+      restartFromBeginning: true,
+    });
+    await ingestion.runs.finish(emptyRun.id, "completed", new Date("2026-08-05T04:01:00.000Z"));
+    await expect(
+      opportunities.reconcileCompletedRun({
+        runId: emptyRun.id,
+        sourceCode: "himalayas",
+        correlationId: `reconcile-${externalId}`,
+        occurredAt: new Date("2026-08-05T04:02:00.000Z"),
+      }),
+    ).resolves.toBeGreaterThanOrEqual(1);
+    const [reconciled] = await sql<{ provenance_state: string; opportunity_state: string }[]>`
+      SELECT pr.deletion_state AS provenance_state, o.deletion_state AS opportunity_state
+      FROM opportunity_provenance pr JOIN opportunities o ON o.id = pr.opportunity_id
+      WHERE pr.id = ${persisted.provenance_id}
+    `;
+    expect(reconciled).toEqual({
+      provenance_state: "tombstoned",
+      opportunity_state: "tombstoned",
     });
   });
 

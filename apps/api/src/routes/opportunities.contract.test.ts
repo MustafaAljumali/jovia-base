@@ -128,6 +128,20 @@ function core(principal: Actor | undefined): ApiOpportunityCoreDependencies {
 }
 
 describe("opportunity v1 API contracts", () => {
+  it("rejects malformed bearer credentials before repository access", async () => {
+    const dependencies = core(actor("opportunity:read"));
+    const app = await createApiApp({ config: { version: "test" }, opportunityCore: dependencies });
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/opportunities",
+      headers: { authorization: "Basic unsafe" },
+    });
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toMatchObject({ code: "authentication_required" });
+    expect(dependencies.opportunities.listActive).not.toHaveBeenCalled();
+    await app.close();
+  });
+
   it.each([
     [undefined, 401, "authentication_required"],
     [actor("opportunity:read"), 403, "capability_denied"],
@@ -240,6 +254,121 @@ describe("opportunity v1 API contracts", () => {
         "/v1/admin/opportunity-sources": { get: expect.any(Object) },
         "/v1/admin/ingestion-runs": { get: expect.any(Object) },
       },
+    });
+    await app.close();
+  });
+
+  it("supports keyset listing, lookup, replacement and organization-scoped removal", async () => {
+    const dependencies = core(actor("opportunity:read", "opportunity:publish"));
+    const app = await createApiApp({ config: { version: "test" }, opportunityCore: dependencies });
+    const headers = { authorization: "Bearer test-token" };
+
+    const list = await app.inject({ method: "GET", url: "/v1/opportunities?limit=1", headers });
+    expect(list.statusCode).toBe(200);
+    expect(list.json()).toMatchObject({
+      items: [{ id: opportunity.id }],
+      nextCursor: expect.any(String),
+    });
+    const invalidCursor = await app.inject({
+      method: "GET",
+      url: "/v1/opportunities?cursor=invalid&limit=1",
+      headers,
+    });
+    expect(invalidCursor.statusCode).toBe(422);
+    expect(invalidCursor.json()).toMatchObject({ code: "invalid_cursor" });
+    const get = await app.inject({
+      method: "GET",
+      url: `/v1/opportunities/${opportunity.id}`,
+      headers,
+    });
+    expect(get.statusCode).toBe(200);
+
+    const replaced = await app.inject({
+      method: "PUT",
+      url: `/v1/opportunities/${opportunity.id}`,
+      headers: { ...headers, "idempotency-key": "replace-key-0001" },
+      payload: command,
+    });
+    expect(replaced.statusCode).toBe(200);
+    expect(dependencies.direct.replace).toHaveBeenCalledOnce();
+
+    const removed = await app.inject({
+      method: "DELETE",
+      url: `/v1/opportunities/${opportunity.id}`,
+      headers: {
+        ...headers,
+        "idempotency-key": "remove-key-0001",
+        "x-publisher-organization-id": command.publisherOrganizationId,
+        "x-publishing-terms-version": command.publishingTermsVersion,
+      },
+    });
+    expect(removed.statusCode).toBe(204);
+    expect(dependencies.direct.remove).toHaveBeenCalledOnce();
+    await app.close();
+  });
+
+  it("returns stable not-found and validates both admin response contracts", async () => {
+    const dependencies = core(actor("opportunity:read", "source:read", "admin:operate"));
+    vi.mocked(dependencies.opportunities.getById).mockResolvedValueOnce(undefined);
+    const app = await createApiApp({ config: { version: "test" }, opportunityCore: dependencies });
+    const headers = { authorization: "Bearer test-token" };
+    const missing = await app.inject({
+      method: "GET",
+      url: "/v1/opportunities/00000000-0000-4000-8000-000000000088",
+      headers,
+    });
+    expect(missing.statusCode).toBe(404);
+    expect(missing.json()).toMatchObject({ code: "not_found" });
+    const sources = await app.inject({
+      method: "GET",
+      url: "/v1/admin/opportunity-sources",
+      headers,
+    });
+    expect(sources.statusCode).toBe(200);
+    expect(sources.json()).toEqual({ items: [] });
+    const runs = await app.inject({ method: "GET", url: "/v1/admin/ingestion-runs", headers });
+    expect(runs.statusCode).toBe(200);
+    expect(runs.json()).toEqual({ items: [] });
+    const unknown = await app.inject({ method: "GET", url: "/v1/not-a-route", headers });
+    expect(unknown.statusCode).toBe(404);
+    expect(unknown.json()).toMatchObject({ code: "not_found" });
+    await app.close();
+  });
+
+  it("serializes non-empty admin runs and a terminal list cursor without ambiguity", async () => {
+    const dependencies = core(actor("opportunity:read", "admin:operate"));
+    vi.mocked(dependencies.runs.listRuns).mockResolvedValue([
+      {
+        id: "00000000-0000-4000-8000-000000000071",
+        sourceCode: "himalayas",
+        policyId: "00000000-0000-4000-8000-000000000072",
+        status: "completed",
+        pagesCommitted: 2,
+        recordsCommitted: 20,
+        correlationId: "run-complete",
+        startedAt: new Date("2026-08-05T00:00:00.000Z"),
+        finishedAt: new Date("2026-08-05T00:01:00.000Z"),
+      },
+      {
+        id: "00000000-0000-4000-8000-000000000073",
+        sourceCode: "himalayas",
+        policyId: "00000000-0000-4000-8000-000000000072",
+        status: "running",
+        pagesCommitted: 0,
+        recordsCommitted: 0,
+        correlationId: "run-active",
+        startedAt: new Date("2026-08-05T00:02:00.000Z"),
+        finishedAt: null,
+      },
+    ]);
+    const app = await createApiApp({ config: { version: "test" }, opportunityCore: dependencies });
+    const headers = { authorization: "Bearer test-token" };
+    const list = await app.inject({ method: "GET", url: "/v1/opportunities?limit=2", headers });
+    expect(list.json()).toMatchObject({ items: [{ id: opportunity.id }], nextCursor: null });
+    const runs = await app.inject({ method: "GET", url: "/v1/admin/ingestion-runs", headers });
+    expect(runs.statusCode).toBe(200);
+    expect(runs.json()).toMatchObject({
+      items: [{ finishedAt: "2026-08-05T00:01:00.000Z" }, { finishedAt: null }],
     });
     await app.close();
   });

@@ -25,4 +25,27 @@ describe("architecture policy", () => {
       ),
     ).toEqual([]);
   });
+
+  it("isolates S3 SDK and lawful source scheduling from downstream matching", () => {
+    expect(
+      findForbiddenImports(
+        "apps/api/src/storage.ts",
+        'import { S3Client } from "@aws-sdk/client-s3";',
+      ),
+    ).toContain("AWS SDK imports are restricted to packages/object-storage");
+    expect(
+      findForbiddenImports(
+        "services/opportunity-ranking/src/poller.ts",
+        'import { ConnectorRunner } from "@jovia/opportunity-ingestion";',
+      ),
+    ).toContain(
+      "Downstream matching and notification domains cannot schedule or import source ingestion",
+    );
+    expect(
+      findForbiddenImports(
+        "apps/worker/src/jobs/source-poll.ts",
+        'import { ConnectorRunner } from "@jovia/opportunity-ingestion";',
+      ),
+    ).toEqual([]);
+  });
 });

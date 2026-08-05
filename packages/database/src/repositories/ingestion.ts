@@ -488,4 +488,67 @@ export class PostgresIngestionRepository {
       ORDER BY r.started_at DESC, r.id DESC LIMIT ${limit}
     `;
   }
+
+  async listRawPayloadsDue(
+    now: Date,
+    limit = 100,
+  ): Promise<readonly (RawPayloadReference & { id: string })[]> {
+    const rows = await this.sql<
+      {
+        id: string;
+        provider: "s3-compatible";
+        bucket: string;
+        objectKey: string;
+        sha256: string;
+        byteLength: number;
+        contentType: string;
+        storedAt: Date;
+      }[]
+    >`
+      SELECT id, provider, bucket, object_key AS "objectKey", sha256,
+        byte_length::int AS "byteLength", content_type AS "contentType", stored_at AS "storedAt"
+      FROM raw_payload_references
+      WHERE purged_at IS NULL AND retention_deadline <= ${now}
+      ORDER BY retention_deadline, id
+      LIMIT ${limit}
+    `;
+    return rows.map((row) => ({ ...row, storedAt: row.storedAt.toISOString() }));
+  }
+
+  async markRawPayloadPurged(id: string, purgedAt: Date): Promise<void> {
+    await this.sql`
+      UPDATE raw_payload_references SET purged_at = ${purgedAt}
+      WHERE id = ${id} AND purged_at IS NULL
+    `;
+  }
+
+  async operationalMetrics(now: Date) {
+    const sources = await this.sql<
+      {
+        sourceCode: string;
+        freshnessLagSeconds: number;
+        tombstoneLagSeconds: number;
+        quarantineCount: number;
+        circuitState: "closed" | "open" | "half_open";
+      }[]
+    >`
+      SELECT s.code AS "sourceCode",
+        GREATEST(0, EXTRACT(EPOCH FROM (${now} - COALESCE(s.last_successful_run_at, s.created_at))))::float8
+          AS "freshnessLagSeconds",
+        COALESCE((
+          SELECT GREATEST(0, MAX(EXTRACT(EPOCH FROM (${now} - pr.tombstoned_at))))::float8
+          FROM opportunity_provenance pr WHERE pr.source_id = s.id AND pr.deletion_state = 'tombstoned'
+        ), 0) AS "tombstoneLagSeconds",
+        (SELECT count(*)::int FROM quarantine_records q WHERE q.source_id = s.id AND q.released_at IS NULL)
+          AS "quarantineCount",
+        c.state AS "circuitState"
+      FROM source_registry s JOIN connector_circuits c ON c.source_id = s.id
+      ORDER BY s.code
+    `;
+    const pending = await this.sql<{ eventType: string; count: number }[]>`
+      SELECT event_type AS "eventType", count(*)::int AS count FROM outbox_events
+      WHERE published_at IS NULL AND dead_lettered_at IS NULL GROUP BY event_type ORDER BY event_type
+    `;
+    return { sources, pendingOutbox: pending };
+  }
 }

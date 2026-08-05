@@ -61,6 +61,7 @@ export default defineConfig({
         "packages/database/scripts/**",
         "packages/database/src/client.ts",
         "packages/database/src/repositories/**",
+        "packages/database/src/schema/**",
       ],
       include: ["apps/**/*.{ts,tsx}", "packages/**/*.ts", "services/**/*.ts"],
       provider: "v8",

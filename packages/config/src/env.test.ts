@@ -37,6 +37,23 @@ describe("environment configuration", () => {
     expect(JSON.stringify(toRedactedConfig(config))).not.toContain("a-secure-placeholder-key");
   });
 
+  it("requires durable storage only when external connectors are enabled", () => {
+    expect(() =>
+      loadWorkerConfig({ ...workerBase, OPPORTUNITY_CONNECTORS_ENABLED: "true" }),
+    ).toThrow(/RAW_PAYLOAD_BUCKET/u);
+    expect(
+      loadWorkerConfig({
+        ...workerBase,
+        OPPORTUNITY_CONNECTORS_ENABLED: "true",
+        RAW_PAYLOAD_BUCKET: "jovia-raw-worker",
+        RAW_PAYLOAD_REGION: "eu-central-1",
+      }),
+    ).toMatchObject({
+      opportunityConnectorsEnabled: true,
+      rawPayload: { bucket: "jovia-raw-worker" },
+    });
+  });
+
   it("validates API ports", () => {
     expect(loadApiConfig({ API_PORT: "3100" }).port).toBe(3100);
     expect(() => loadApiConfig({ API_PORT: "70000" })).toThrow(/API_PORT/u);

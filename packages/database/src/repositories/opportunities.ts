@@ -508,50 +508,155 @@ export class PostgresOpportunityRepository
   async commitReplace(
     input: Parameters<DirectOpportunityTransactionPort["commitReplace"]>[0],
   ): Promise<CanonicalOpportunity> {
-    const [owned] = await this.sql<{ id: string }[]>`
-      SELECT id FROM opportunities
-      WHERE id = ${input.opportunityId}
-        AND publisher_organization_id = ${input.command.publisherOrganizationId}
-        AND deletion_state = 'present'
-    `;
-    if (!owned) {
-      throw new AppError({ code: "not_found", status: 404, title: "Opportunity not found" });
-    }
-    const replacement = await this.commitCreate(input);
-    await this.sql`
-      UPDATE opportunities SET lifecycle = 'removed', deletion_state = 'tombstoned',
-        tombstone_reason = 'publisher_replaced', tombstoned_at = now()
-      WHERE id = ${input.opportunityId}
-        AND publisher_organization_id = ${input.command.publisherOrganizationId}
-        AND id <> ${replacement.id}
-    `;
-    return replacement;
+    const opportunityId = await this.sql.begin(async (tx) => {
+      await tx`SELECT pg_advisory_xact_lock(hashtextextended(${`${input.actor.id}:${input.idempotencyKey}`}, 0))`;
+      const [replay] = await tx<{ request_sha256: string; opportunity_id: string | null }[]>`
+        SELECT request_sha256, opportunity_id FROM opportunity_idempotency
+        WHERE actor_id = ${input.actor.id} AND idempotency_key = ${input.idempotencyKey}
+      `;
+      if (replay) {
+        if (replay.request_sha256 !== input.requestSha256 || !replay.opportunity_id) {
+          throw new AppError({
+            code: "idempotency_conflict",
+            status: 409,
+            title: "Idempotency conflict",
+          });
+        }
+        return replay.opportunity_id;
+      }
+      const [owned] = await tx<{ id: string }[]>`
+        SELECT id FROM opportunities
+        WHERE id = ${input.opportunityId}
+          AND publisher_organization_id = ${input.command.publisherOrganizationId}
+          AND deletion_state = 'present'
+        FOR UPDATE
+      `;
+      if (!owned) {
+        throw new AppError({ code: "not_found", status: 404, title: "Opportunity not found" });
+      }
+      const source = await directSource(tx);
+      const now = new Date(input.normalized.normalizedAt);
+      await tx`
+        UPDATE opportunities SET lifecycle = 'removed', deletion_state = 'tombstoned',
+          tombstone_reason = 'publisher_replaced', tombstoned_at = ${now},
+          purge_eligible_at = ${new Date(now.getTime() + 90 * 86_400_000)}, updated_at = ${now}
+        WHERE id = ${owned.id}
+      `;
+      await tx`
+        INSERT INTO opportunity_audits (
+          opportunity_id, action, actor_id, source_id, correlation_id, reason,
+          resulting_state_sha256, occurred_at
+        ) VALUES (
+          ${owned.id}, 'tombstoned', ${input.actor.id}, ${source.source_id},
+          ${input.correlationId}, 'publisher_replaced',
+          ${stateDigest({ id: owned.id, lifecycle: "removed", reason: "publisher_replaced" })}, ${now}
+        )
+      `;
+      await storeOutbox(
+        tx,
+        "opportunity.tombstoned.v1",
+        owned.id,
+        "removed",
+        `jovia-direct:${owned.id}:replaced`,
+        input.correlationId,
+        now,
+      );
+      const runId = await createDirectRun(tx, source, input.correlationId, now);
+      const rawPayloadId = await registerDirectRaw(tx, source, runId, input.raw);
+      const replacementId = await insertNormalized(
+        tx,
+        input.normalized,
+        input.command.publisherOrganizationId,
+        source,
+        runId,
+        rawPayloadId,
+        input.raw.sha256,
+        input.correlationId,
+      );
+      await tx`
+        INSERT INTO opportunity_idempotency (
+          actor_id, publisher_organization_id, idempotency_key, request_sha256,
+          opportunity_id, response_status, response_body, expires_at
+        ) VALUES (
+          ${input.actor.id}, ${input.command.publisherOrganizationId}, ${input.idempotencyKey},
+          ${input.requestSha256}, ${replacementId}, 200,
+          ${tx.json({ opportunityId: replacementId })}, ${new Date(now.getTime() + 86_400_000)}
+        )
+      `;
+      return replacementId;
+    });
+    const opportunity = await this.getById(opportunityId);
+    if (!opportunity) throw new Error("replacement opportunity could not be loaded");
+    return opportunity;
   }
 
   async commitRemove(
     input: Parameters<DirectOpportunityTransactionPort["commitRemove"]>[0],
   ): Promise<CanonicalOpportunity> {
-    const [updated] = await this.sql<{ id: string }[]>`
-      UPDATE opportunities SET lifecycle = 'removed', deletion_state = 'tombstoned',
-        tombstone_reason = 'publisher_deleted', tombstoned_at = now(),
-        purge_eligible_at = now() + interval '90 days', updated_at = now()
-      WHERE id = ${input.opportunityId}
-        AND publisher_organization_id = ${input.organizationId}
-        AND deletion_state = 'present'
-      RETURNING id
-    `;
-    if (!updated)
-      throw new AppError({ code: "not_found", status: 404, title: "Opportunity not found" });
-    await storeOutbox(
-      this.sql,
-      "opportunity.tombstoned.v1",
-      updated.id,
-      "removed",
-      `jovia-direct:${updated.id}:removed`,
-      input.correlationId,
-      new Date(),
-    );
-    const result = await this.getById(updated.id);
+    const opportunityId = await this.sql.begin(async (tx) => {
+      await tx`SELECT pg_advisory_xact_lock(hashtextextended(${`${input.actor.id}:${input.idempotencyKey}`}, 0))`;
+      const [replay] = await tx<{ request_sha256: string; opportunity_id: string | null }[]>`
+        SELECT request_sha256, opportunity_id FROM opportunity_idempotency
+        WHERE actor_id = ${input.actor.id} AND idempotency_key = ${input.idempotencyKey}
+      `;
+      if (replay) {
+        if (replay.request_sha256 !== input.requestSha256 || !replay.opportunity_id) {
+          throw new AppError({
+            code: "idempotency_conflict",
+            status: 409,
+            title: "Idempotency conflict",
+          });
+        }
+        return replay.opportunity_id;
+      }
+      const source = await directSource(tx);
+      const occurredAt = input.occurredAt;
+      const [updated] = await tx<{ id: string }[]>`
+        UPDATE opportunities SET lifecycle = 'removed', deletion_state = 'tombstoned',
+          tombstone_reason = 'publisher_deleted', tombstoned_at = ${occurredAt},
+          purge_eligible_at = ${new Date(occurredAt.getTime() + 90 * 86_400_000)},
+          updated_at = ${occurredAt}
+        WHERE id = ${input.opportunityId}
+          AND publisher_organization_id = ${input.organizationId}
+          AND deletion_state = 'present'
+        RETURNING id
+      `;
+      if (!updated) {
+        throw new AppError({ code: "not_found", status: 404, title: "Opportunity not found" });
+      }
+      await tx`
+        INSERT INTO opportunity_audits (
+          opportunity_id, action, actor_id, source_id, correlation_id, reason,
+          resulting_state_sha256, occurred_at
+        ) VALUES (
+          ${updated.id}, 'tombstoned', ${input.actor.id}, ${source.source_id},
+          ${input.correlationId}, 'publisher_deleted',
+          ${stateDigest({ id: updated.id, lifecycle: "removed", reason: "publisher_deleted" })},
+          ${occurredAt}
+        )
+      `;
+      await storeOutbox(
+        tx,
+        "opportunity.tombstoned.v1",
+        updated.id,
+        "removed",
+        `jovia-direct:${updated.id}:removed`,
+        input.correlationId,
+        occurredAt,
+      );
+      await tx`
+        INSERT INTO opportunity_idempotency (
+          actor_id, publisher_organization_id, idempotency_key, request_sha256,
+          opportunity_id, response_status, response_body, expires_at
+        ) VALUES (
+          ${input.actor.id}, ${input.organizationId}, ${input.idempotencyKey},
+          ${input.requestSha256}, ${updated.id}, 200,
+          ${tx.json({ opportunityId: updated.id })}, ${new Date(occurredAt.getTime() + 86_400_000)}
+        )
+      `;
+      return updated.id;
+    });
+    const result = await this.getById(opportunityId);
     if (!result) throw new Error("removed opportunity could not be loaded");
     return result;
   }
@@ -560,18 +665,21 @@ export class PostgresOpportunityRepository
     input: Parameters<OpportunityLifecyclePort["tombstoneOccurrence"]>[0],
   ): Promise<{ canonicalOpportunityId: string; canonicalRemainsActive: boolean }> {
     return this.sql.begin(async (tx) => {
-      const [occurrence] = await tx<{ opportunity_id: string; canonical_id: string }[]>`
-        SELECT pr.opportunity_id, o.canonical_opportunity_id AS canonical_id
+      const [occurrence] = await tx<
+        { opportunity_id: string; canonical_id: string; source_id: string }[]
+      >`
+        SELECT pr.opportunity_id, o.canonical_opportunity_id AS canonical_id, pr.source_id
         FROM opportunity_provenance pr JOIN opportunities o ON o.id = pr.opportunity_id
         WHERE pr.id = ${input.provenanceId} FOR UPDATE OF pr, o
       `;
       if (!occurrence)
         throw new AppError({ code: "not_found", status: 404, title: "Provenance not found" });
-      await tx`
+      const [tombstoned] = await tx<{ id: string }[]>`
         UPDATE opportunity_provenance SET deletion_state = 'tombstoned',
           tombstone_reason = ${input.reason}, tombstoned_at = ${input.occurredAt},
           purge_eligible_at = ${new Date(input.occurredAt.getTime() + 90 * 86_400_000)}
         WHERE id = ${input.provenanceId} AND deletion_state = 'present'
+        RETURNING id
       `;
       const [active] = await tx<{ exists: boolean }[]>`
         SELECT EXISTS (
@@ -582,6 +690,19 @@ export class PostgresOpportunityRepository
         ) AS exists
       `;
       const remains = active?.exists ?? false;
+      if (tombstoned) {
+        await tx`
+          INSERT INTO opportunity_audits (
+            opportunity_id, action, source_id, correlation_id, reason,
+            resulting_state_sha256, occurred_at
+          ) VALUES (
+            ${occurrence.opportunity_id}, 'tombstoned', ${occurrence.source_id},
+            ${input.correlationId}, ${input.reason},
+            ${stateDigest({ provenanceId: input.provenanceId, deletionState: "tombstoned" })},
+            ${input.occurredAt}
+          )
+        `;
+      }
       if (!remains) {
         await tx`
           UPDATE opportunities SET lifecycle = 'removed', deletion_state = 'tombstoned',
@@ -604,27 +725,38 @@ export class PostgresOpportunityRepository
   }
 
   async expireDue(input: { limit: number; occurredAt: Date }): Promise<number> {
-    const expired = await this.sql<{ id: string }[]>`
-      WITH due AS (
-        SELECT id FROM opportunities
-        WHERE lifecycle = 'active' AND deletion_state = 'present' AND expires_at <= ${input.occurredAt}
-        ORDER BY expires_at, id FOR UPDATE SKIP LOCKED LIMIT ${input.limit}
-      )
-      UPDATE opportunities o SET lifecycle = 'expired', updated_at = ${input.occurredAt}
-      FROM due WHERE o.id = due.id RETURNING o.id
-    `;
-    for (const row of expired) {
-      await storeOutbox(
-        this.sql,
-        "opportunity.expired.v1",
-        row.id,
-        "expired",
-        `${row.id}:expired`,
-        "expiry-sweep",
-        input.occurredAt,
-      );
-    }
-    return expired.length;
+    return this.sql.begin(async (tx) => {
+      const expired = await tx<{ id: string }[]>`
+        WITH due AS (
+          SELECT id FROM opportunities
+          WHERE lifecycle = 'active' AND deletion_state = 'present'
+            AND expires_at <= ${input.occurredAt}
+          ORDER BY expires_at, id FOR UPDATE SKIP LOCKED LIMIT ${input.limit}
+        )
+        UPDATE opportunities o SET lifecycle = 'expired', updated_at = ${input.occurredAt}
+        FROM due WHERE o.id = due.id RETURNING o.id
+      `;
+      for (const row of expired) {
+        await tx`
+          INSERT INTO opportunity_audits (
+            opportunity_id, action, correlation_id, reason, resulting_state_sha256, occurred_at
+          ) VALUES (
+            ${row.id}, 'expired', 'expiry-sweep', 'source_expired',
+            ${stateDigest({ id: row.id, lifecycle: "expired" })}, ${input.occurredAt}
+          )
+        `;
+        await storeOutbox(
+          tx,
+          "opportunity.expired.v1",
+          row.id,
+          "expired",
+          `${row.id}:expired`,
+          "expiry-sweep",
+          input.occurredAt,
+        );
+      }
+      return expired.length;
+    });
   }
 
   async reconcileCompletedRun(
@@ -637,31 +769,57 @@ export class PostgresOpportunityRepository
     `;
     if (!run || run.status !== "completed") return 0;
     const stale = await this.sql<{ id: string }[]>`
-      UPDATE opportunity_provenance pr SET deletion_state = 'tombstoned',
-        tombstone_reason = 'source_removed', tombstoned_at = ${input.occurredAt},
-        purge_eligible_at = ${new Date(input.occurredAt.getTime() + 90 * 86_400_000)}
+      SELECT pr.id FROM opportunity_provenance pr
       WHERE pr.source_id = ${run.source_id} AND pr.deletion_state = 'present'
         AND NOT EXISTS (
           SELECT 1 FROM ingestion_run_seen seen
           WHERE seen.run_id = ${input.runId} AND seen.source_id = pr.source_id
             AND seen.external_id = pr.external_id
         )
-      RETURNING pr.id
     `;
+    for (const occurrence of stale) {
+      await this.tombstoneOccurrence({
+        provenanceId: occurrence.id,
+        reason: "source_removed",
+        correlationId: input.correlationId,
+        occurredAt: input.occurredAt,
+      });
+    }
     return stale.length;
   }
 
   async purgeDue(input: { limit: number; occurredAt: Date }): Promise<number> {
-    const purged = await this.sql`
-      WITH due AS (
-        SELECT id FROM opportunities
-        WHERE deletion_state = 'tombstoned' AND purge_eligible_at <= ${input.occurredAt}
-        ORDER BY purge_eligible_at, id FOR UPDATE SKIP LOCKED LIMIT ${input.limit}
-      )
-      UPDATE opportunities o SET deletion_state = 'purged', purged_at = ${input.occurredAt},
-        description_html = '', description_text = '', extension = '{}'::jsonb
-      FROM due WHERE o.id = due.id RETURNING o.id
-    `;
-    return purged.length;
+    return this.sql.begin(async (tx) => {
+      const purged = await tx<{ id: string }[]>`
+        WITH due AS (
+          SELECT id FROM opportunities
+          WHERE deletion_state = 'tombstoned' AND purge_eligible_at <= ${input.occurredAt}
+            AND NOT EXISTS (
+              SELECT 1 FROM opportunity_provenance pr
+              JOIN raw_payload_references raw ON raw.id = pr.raw_payload_id
+              WHERE pr.opportunity_id = opportunities.id AND raw.purged_at IS NULL
+            )
+          ORDER BY purge_eligible_at, id FOR UPDATE SKIP LOCKED LIMIT ${input.limit}
+        )
+        UPDATE opportunities o SET deletion_state = 'purged', purged_at = ${input.occurredAt},
+          description_html = '', description_text = '', extension = '{}'::jsonb
+        FROM due WHERE o.id = due.id RETURNING o.id
+      `;
+      for (const row of purged) {
+        await tx`
+          UPDATE opportunity_provenance SET deletion_state = 'purged', purged_at = ${input.occurredAt}
+          WHERE opportunity_id = ${row.id} AND deletion_state = 'tombstoned'
+        `;
+        await tx`
+          INSERT INTO opportunity_audits (
+            opportunity_id, action, correlation_id, reason, resulting_state_sha256, occurred_at
+          ) VALUES (
+            ${row.id}, 'purged', 'retention-sweep', 'retention_deadline_reached',
+            ${stateDigest({ id: row.id, deletionState: "purged" })}, ${input.occurredAt}
+          )
+        `;
+      }
+      return purged.length;
+    });
   }
 }

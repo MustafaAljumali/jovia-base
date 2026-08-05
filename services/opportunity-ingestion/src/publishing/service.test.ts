@@ -95,4 +95,54 @@ describe("DirectOpportunityService", () => {
     ).rejects.toMatchObject({ code: "idempotency_conflict", status: 409 });
     expect(ports.rawPayloads.put).toHaveBeenCalledOnce();
   });
+
+  it("routes replacements through the same governed raw-capture and normalization pipeline", async () => {
+    const { ports, service } = harness();
+    const actor = { id: "00000000-0000-4000-8000-000000000001" };
+    const replacement: DirectOpportunityCommand = {
+      ...command,
+      expiresAt: "2026-09-05T00:00:00.000Z",
+    };
+    delete replacement.compensation;
+
+    await expect(
+      service.replace(actor, opportunity.id, replacement, "replace-key-0001", "replace-test"),
+    ).resolves.toBe(opportunity);
+
+    expect(ports.eligibility.require).toHaveBeenCalledWith(
+      "jovia-direct",
+      "replace",
+      "replace-test",
+    );
+    expect(ports.rawPayloads.put).toHaveBeenCalledOnce();
+    const normalizedInput = vi.mocked(ports.normalize).mock.calls[0]?.[0];
+    expect(normalizedInput).toMatchObject({ expiresAt: replacement.expiresAt });
+    expect(normalizedInput).not.toHaveProperty("compensation");
+    expect(ports.transactions.commitReplace).toHaveBeenCalledWith(
+      expect.objectContaining({ opportunityId: opportunity.id, correlationId: "replace-test" }),
+    );
+  });
+
+  it("authorizes and idempotently removes a direct publication without fabricating raw evidence", async () => {
+    const { ports, service } = harness();
+    const actor = { id: "00000000-0000-4000-8000-000000000001" };
+    const removed = await service.remove(
+      actor,
+      opportunity.id,
+      command.publisherOrganizationId,
+      command.publishingTermsVersion,
+      "remove-key-0001",
+      "remove-test",
+    );
+
+    expect(removed).toBe(opportunity);
+    expect(ports.eligibility.require).toHaveBeenCalledWith("jovia-direct", "remove", "remove-test");
+    expect(ports.transactions.commitRemove).toHaveBeenCalledWith(
+      expect.objectContaining({
+        opportunityId: opportunity.id,
+        organizationId: command.publisherOrganizationId,
+      }),
+    );
+    expect(ports.rawPayloads.put).not.toHaveBeenCalled();
+  });
 });

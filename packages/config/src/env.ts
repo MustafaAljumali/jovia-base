@@ -36,6 +36,11 @@ const ApiEnvSchema = BaseEnvSchema.extend({
 const WorkerEnvSchema = BaseEnvSchema.extend({
   DATABASE_URL: z.url(),
   REDIS_URL: z.url(),
+  OPPORTUNITY_CONNECTORS_ENABLED: BooleanStringSchema.default(false),
+  RAW_PAYLOAD_BUCKET: z.string().min(3).optional(),
+  RAW_PAYLOAD_REGION: z.string().min(1).optional(),
+  RAW_PAYLOAD_ENDPOINT: z.url().optional(),
+  RAW_PAYLOAD_APPROVED_ENDPOINT_HOSTS: z.string().optional(),
   AI_GEMINI_ENABLED: BooleanStringSchema.default(false),
   AI_GEMINI_API_KEY: z.string().min(20).optional(),
   AI_GEMINI_MODEL: z.literal("gemini-3.6-flash").optional(),
@@ -53,6 +58,17 @@ const WorkerEnvSchema = BaseEnvSchema.extend({
       path: ["AI_GEMINI_MODEL"],
       message: "must pin gemini-3.6-flash",
     });
+  }
+  if (value.NODE_ENV === "production" || value.OPPORTUNITY_CONNECTORS_ENABLED) {
+    for (const key of ["RAW_PAYLOAD_BUCKET", "RAW_PAYLOAD_REGION"] as const) {
+      if (!value[key]) {
+        context.addIssue({
+          code: "custom",
+          path: [key],
+          message: "required when connectors are enabled",
+        });
+      }
+    }
   }
 });
 
@@ -92,12 +108,22 @@ export function loadWorkerConfig(
   return {
     databaseUrl: parsed.DATABASE_URL,
     environment: parsed.NODE_ENV,
+    opportunityConnectorsEnabled: parsed.OPPORTUNITY_CONNECTORS_ENABLED,
     gemini: {
       apiKey: parsed.AI_GEMINI_API_KEY,
       enabled: parsed.AI_GEMINI_ENABLED,
       model: parsed.AI_GEMINI_MODEL,
     },
     logLevel: parsed.LOG_LEVEL,
+    rawPayload: {
+      approvedEndpointHosts: (parsed.RAW_PAYLOAD_APPROVED_ENDPOINT_HOSTS ?? "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean),
+      bucket: parsed.RAW_PAYLOAD_BUCKET,
+      endpoint: parsed.RAW_PAYLOAD_ENDPOINT,
+      region: parsed.RAW_PAYLOAD_REGION,
+    },
     redisUrl: parsed.REDIS_URL,
     version: parsed.APP_VERSION,
   } as const;
@@ -112,6 +138,10 @@ export function toRedactedConfig(config: ApiConfig | WorkerConfig) {
         enabled: config.gemini.enabled,
         hasApiKey: Boolean(config.gemini.apiKey),
         model: config.gemini.model,
+      },
+      rawPayload: {
+        ...config.rawPayload,
+        endpoint: config.rawPayload.endpoint ? "[CONFIGURED]" : undefined,
       },
       redisUrl: "[CONFIGURED]",
     };

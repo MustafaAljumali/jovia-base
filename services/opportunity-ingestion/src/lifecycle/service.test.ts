@@ -44,4 +44,23 @@ describe("OpportunityLifecycleService", () => {
       3,
     );
   });
+
+  it("delegates bounded expiry and purge sweeps with a single clock reading", async () => {
+    const now = new Date("2026-08-05T02:00:00.000Z");
+    const lifecycle: OpportunityLifecyclePort = {
+      tombstoneOccurrence: vi.fn(async () => ({
+        canonicalOpportunityId: "id",
+        canonicalRemainsActive: false,
+      })),
+      expireDue: vi.fn(async () => 7),
+      reconcileCompletedRun: vi.fn(async () => 0),
+      purgeDue: vi.fn(async () => 2),
+    };
+    const service = new OpportunityLifecycleService(lifecycle, { now: () => now });
+
+    await expect(service.expireDue(25)).resolves.toBe(7);
+    await expect(service.purgeDue(10)).resolves.toBe(2);
+    expect(lifecycle.expireDue).toHaveBeenCalledWith({ limit: 25, occurredAt: now });
+    expect(lifecycle.purgeDue).toHaveBeenCalledWith({ limit: 10, occurredAt: now });
+  });
 });

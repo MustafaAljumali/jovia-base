@@ -8,7 +8,11 @@
   },
   "dependencies": {
     "@jovia/config": "workspace:*",
+    "@jovia/contracts": "workspace:*",
+    "@jovia/database": "workspace:*",
+    "@jovia/object-storage": "workspace:*",
     "@jovia/observability": "workspace:*",
+    "@jovia/opportunity-ingestion": "workspace:*",
     "bullmq": "6.0.7",
     "ioredis": "6.0.0"
   }

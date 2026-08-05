@@ -120,9 +120,21 @@ importers:
       '@jovia/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@jovia/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@jovia/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@jovia/object-storage':
+        specifier: workspace:*
+        version: link:../../packages/object-storage
       '@jovia/observability':
         specifier: workspace:*
         version: link:../../packages/observability
+      '@jovia/opportunity-ingestion':
+        specifier: workspace:*
+        version: link:../../services/opportunity-ingestion
       bullmq:
         specifier: 6.0.7
         version: 6.0.7(ioredis@6.0.0(supports-color@7.2.0))

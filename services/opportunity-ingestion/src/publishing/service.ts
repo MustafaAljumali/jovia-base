@@ -64,6 +64,7 @@ export interface DirectOpportunityTransactionPort {
     requestSha256: string;
     source: EligibleSourceContext;
     correlationId: string;
+    occurredAt: Date;
   }): Promise<CanonicalOpportunity>;
 }
 
@@ -190,6 +191,7 @@ export class DirectOpportunityService {
       requestSha256,
       source,
       correlationId,
+      occurredAt: this.ports.clock.now(),
     });
   }
 

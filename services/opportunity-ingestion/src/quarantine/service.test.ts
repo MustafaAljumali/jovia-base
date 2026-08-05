@@ -68,4 +68,39 @@ describe("QuarantineService", () => {
       expect.objectContaining({ mapperVersion: "2.0.0", releasedAt: expect.any(Date) }),
     );
   });
+
+  it("records safe quarantine metadata without transforming immutable evidence", async () => {
+    const { repository, service } = harness();
+    const input = {
+      sourceCode: record.sourceCode,
+      runId: record.runId,
+      raw: record.rawReference,
+      reason: record.reason,
+      safeFieldPaths: record.safeFieldPaths,
+      connectorVersion: record.connectorVersion,
+      correlationId: record.correlationId,
+    } as const;
+
+    await expect(service.record(input)).resolves.toBeUndefined();
+    expect(repository.record).toHaveBeenCalledWith(input);
+  });
+
+  it("fails closed for missing and already released quarantine records", async () => {
+    const { repository, service } = harness();
+    const actor = { id: "actor", capabilities: new Set(["admin:operate"]) };
+    vi.mocked(repository.find)
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce({
+        ...record,
+        releasedAt: "2026-08-05T00:30:00.000Z",
+      });
+
+    await expect(service.releaseForReplay(actor, record.id, "2.0.0")).rejects.toMatchObject({
+      code: "not_found",
+    });
+    await expect(service.releaseForReplay(actor, record.id, "2.0.0")).rejects.toMatchObject({
+      code: "quarantine_already_released",
+    });
+    expect(repository.releaseForReplay).not.toHaveBeenCalled();
+  });
 });

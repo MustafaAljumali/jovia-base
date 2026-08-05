@@ -27,6 +27,28 @@ export function findForbiddenImports(filePath, sourceText) {
     errors.push("@google/genai imports are restricted to packages/ai/src/providers/gemini");
   }
 
+  if (sourceText.includes("@aws-sdk") && !normalizedPath.startsWith("packages/object-storage/")) {
+    errors.push("AWS SDK imports are restricted to packages/object-storage");
+  }
+
+  const downstreamOpportunityDomains = [
+    "apps/web/",
+    "packages/notifications/",
+    "services/notification-delivery/",
+    "services/opportunity-ranking/",
+    "services/opportunity-scoring/",
+    "services/proposal-generation/",
+  ];
+  if (
+    downstreamOpportunityDomains.some((prefix) => normalizedPath.startsWith(prefix)) &&
+    (sourceText.includes("@jovia/opportunity-ingestion") ||
+      sourceText.includes("apps/worker/src/adapters/scheduler"))
+  ) {
+    errors.push(
+      "Downstream matching and notification domains cannot schedule or import source ingestion",
+    );
+  }
+
   if (/drizzle-orm\/mysql|from ["']mysql2["']|from ["'][^"']*tidb/i.test(sourceText)) {
     errors.push("MySQL and TiDB imports are prohibited");
   }
