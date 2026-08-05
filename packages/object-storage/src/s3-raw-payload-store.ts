@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import type { RawPayloadStore, RawPayloadWrite } from "@jovia/opportunity-ingestion";
 
 type RawPayloadReference = Parameters<RawPayloadStore["delete"]>[0];
@@ -122,4 +122,17 @@ export class S3RawPayloadStore implements RawPayloadStore {
       new DeleteObjectCommand({ Bucket: this.config.bucket, Key: reference.objectKey }),
     );
   }
+}
+
+export async function createS3RawPayloadStore(
+  input: RawPayloadStorageConfigInput,
+  clock: { now(): Date } = { now: () => new Date() },
+): Promise<S3RawPayloadStore> {
+  const config = validateRawPayloadStorageConfig(input);
+  const client = new S3Client({
+    region: config.region,
+    ...(config.endpoint ? { endpoint: config.endpoint, forcePathStyle: true } : {}),
+  });
+  if (config.environment === "production") await client.config.credentials();
+  return new S3RawPayloadStore(client, config, clock);
 }
