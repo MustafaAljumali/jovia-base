@@ -41,23 +41,27 @@ export function registerAuthentication(
     keyPrefix: "jovia-api-pre-authentication",
   });
   app.decorateRequest("actor", null);
-  app.addHook("preHandler", async (request, reply) => {
+  app.addHook("preHandler", (request, reply) => {
     if (request.routeOptions.url === "/v1/health") return;
-    try {
-      await preAuthenticationLimiter.consume(request.ip);
-    } catch (error) {
-      const milliseconds =
-        typeof error === "object" && error !== null && "msBeforeNext" in error
-          ? Number(error.msBeforeNext)
-          : rateLimitOptions.durationSeconds * 1_000;
-      const retryAfterSeconds = Math.max(1, Math.ceil(milliseconds / 1_000));
-      reply.header("retry-after", retryAfterSeconds.toString());
-      throw new AppError({
-        code: "rate_limit_exceeded",
-        status: 429,
-        title: "Pre-authentication request rate limit exceeded",
-      });
-    }
+    return preAuthenticationLimiter.consume(request.ip).then(
+      () => undefined,
+      (error: unknown) => {
+        const milliseconds =
+          typeof error === "object" && error !== null && "msBeforeNext" in error
+            ? Number(error.msBeforeNext)
+            : rateLimitOptions.durationSeconds * 1_000;
+        const retryAfterSeconds = Math.max(1, Math.ceil(milliseconds / 1_000));
+        reply.header("retry-after", retryAfterSeconds.toString());
+        throw new AppError({
+          code: "rate_limit_exceeded",
+          status: 429,
+          title: "Pre-authentication request rate limit exceeded",
+        });
+      },
+    );
+  });
+  app.addHook("preHandler", async (request) => {
+    if (request.routeOptions.url === "/v1/health") return;
     const actor = await authenticator.authenticate(bearerToken(request.headers.authorization));
     if (!actor) {
       throw new AppError({

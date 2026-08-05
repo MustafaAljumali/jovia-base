@@ -50,7 +50,7 @@ The exact locked toolchain is Node `24.14.x` and pnpm `11.20.0`.
 | ESLint | Passed with zero warnings. |
 | Type checking | Passed: composite TypeScript build and web no-emit check. |
 | Unit and contract tests | Passed: 46 files, 158 tests; 10 PostgreSQL-only tests intentionally skipped in the local unit project. |
-| Coverage | Passed: statements 90.68%, branches 80.27%, functions 92.30%, lines 92.64%. Thresholds were not lowered. Declarative Drizzle schema files are excluded; their actual migrations are exercised in PostgreSQL integration tests. |
+| Coverage | Passed: statements 90.62%, branches 80.20%, functions 92.38%, lines 92.65%. Thresholds were not lowered. Declarative Drizzle schema files are excluded; their actual migrations are exercised in PostgreSQL integration tests. |
 | Production build | Passed: TypeScript composite build and Vite production web bundle. |
 | Architecture policy | Passed: provider, AWS SDK, database, web/server, Manus, mutable-action, and downstream ingestion boundaries. |
 | Secret policy | Passed; no private signing material, credential, token, or raw payload is present. |
@@ -62,9 +62,10 @@ The exact locked toolchain is Node `24.14.x` and pnpm `11.20.0`.
 GitHub Advanced Security subsequently identified two high-severity review findings:
 an authentication database lookup without a recognized pre-authentication limiter,
 and a polynomial end-trimming regular expression. The remediation adds a
-CodeQL-recognized limiter before bearer verification and replaces regex trimming
-with bounded linear character scanning. Both paths have regression tests; the PR
-must not merge until the follow-up Code Scanning result closes both alerts.
+dedicated rate-limiting Fastify pre-handler before bearer verification and
+replaces regex trimming with bounded linear character scanning. Both paths have
+regression tests; the PR must not merge until the follow-up Code Scanning result
+closes both alerts.
 
 ## Signing evidence
 
