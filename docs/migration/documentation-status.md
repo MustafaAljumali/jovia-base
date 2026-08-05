@@ -4,7 +4,7 @@
 
 1. `Jovia_Engineering_Constitution_v2.0.md` is the supreme engineering authority.
 2. `Jovia_Strategic_Product_Vision.md` and
-   `Jovia_Governance_and_Business_Operations.md.md` are approved controlling input.
+   `Jovia_Governance_and_Business_Operations.md` are approved controlling input.
 3. Accepted ADRs govern their documented scope. ADR-0001 is the accepted
    foundational monorepo decision approved by the Product Owner on 2026-08-04.
 4. `Jovia_Technical_Research_and_Integration_Blueprint.docx` is the approved
@@ -24,9 +24,12 @@ SHA-256 comparison found two exact duplicate pairs:
 - `Jovia_Autonomous_Opportunity_Intelligence_AOI_V3 (1).md` and
   `Opportunity_Discovery_and_Notification_Engine.md.md`.
 
-The filenames `Jovia_Governance_and_Business_Operations.md.md` and
-`Opportunity_Discovery_and_Notification_Engine.md.md` contain duplicated Markdown
-extensions. They are recorded as anomalies rather than silently renamed.
+The foundational ADR-approved correction renamed
+`Jovia_Governance_and_Business_Operations.md.md` to
+`Jovia_Governance_and_Business_Operations.md` and updated every reference in the
+same Batch 2 documentation commit. The remaining
+`Opportunity_Discovery_and_Notification_Engine.md.md` filename is recorded as an
+inventory anomaly and is not silently renamed.
 
 `Jovia-KnowledgeBase_combined.md` and `bibcit-export-2026-07-27.md` are not byte
 duplicates but overlap heavily: normalized unique non-empty lines have 23,070

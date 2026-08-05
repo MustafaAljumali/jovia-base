@@ -931,7 +931,7 @@ git commit -S -m "feat(worker): operate lawful opportunity lifecycle"
 - Modify: `docs/security/README.md`
 - Modify: `README.md`
 - Modify: `Jovia-KnowledgeBase_combined.md`
-- Rename: `Jovia_Governance_and_Business_Operations.md.md` to `Jovia_Governance_and_Business_Operations.md`
+- Rename the governance document to the accepted single `.md` filename.
 
 **Interfaces:**
 - Consumes: implemented code, tests, migration, metrics, contracts and approved governing documents.
@@ -962,7 +962,7 @@ Expected: PASS.
 - [ ] **Step 4: Commit documentation and evidence**
 
 ```bash
-git add -A README.md Jovia_Governance_and_Business_Operations.md.md Jovia_Governance_and_Business_Operations.md Jovia-KnowledgeBase_combined.md docs
+git add -A README.md Jovia_Governance_and_Business_Operations.md Jovia-KnowledgeBase_combined.md docs
 git commit -S -m "docs: record opportunity core production evidence"
 ```
 
