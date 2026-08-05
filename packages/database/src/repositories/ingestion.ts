@@ -465,4 +465,27 @@ export class PostgresIngestionRepository {
       `;
     },
   };
+
+  async listRuns(limit = 100) {
+    return this.sql<
+      {
+        id: string;
+        sourceCode: string;
+        policyId: string;
+        status: string;
+        pagesCommitted: number;
+        recordsCommitted: number;
+        correlationId: string;
+        startedAt: Date;
+        finishedAt: Date | null;
+      }[]
+    >`
+      SELECT r.id, s.code AS "sourceCode", r.policy_id AS "policyId", r.status,
+        r.pages_committed AS "pagesCommitted", r.records_committed AS "recordsCommitted",
+        r.correlation_id AS "correlationId", r.started_at AS "startedAt",
+        r.finished_at AS "finishedAt"
+      FROM ingestion_runs r JOIN source_registry s ON s.id = r.source_id
+      ORDER BY r.started_at DESC, r.id DESC LIMIT ${limit}
+    `;
+  }
 }

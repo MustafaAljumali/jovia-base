@@ -11,6 +11,26 @@ const BaseEnvSchema = z.object({
 const ApiEnvSchema = BaseEnvSchema.extend({
   API_HOST: z.string().min(1).default("127.0.0.1"),
   API_PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
+  DATABASE_URL: z.url().optional(),
+  REDIS_URL: z.url().optional(),
+  RAW_PAYLOAD_BUCKET: z.string().min(3).optional(),
+  RAW_PAYLOAD_REGION: z.string().min(1).optional(),
+  RAW_PAYLOAD_ENDPOINT: z.url().optional(),
+  RAW_PAYLOAD_APPROVED_ENDPOINT_HOSTS: z.string().optional(),
+  API_RATE_LIMIT_REQUESTS: z.coerce.number().int().positive().default(120),
+  API_RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(60),
+}).superRefine((value, context) => {
+  if (value.NODE_ENV !== "production") return;
+  for (const key of [
+    "DATABASE_URL",
+    "REDIS_URL",
+    "RAW_PAYLOAD_BUCKET",
+    "RAW_PAYLOAD_REGION",
+  ] as const) {
+    if (!value[key]) {
+      context.addIssue({ code: "custom", path: [key], message: "required in production" });
+    }
+  }
 });
 
 const WorkerEnvSchema = BaseEnvSchema.extend({
@@ -42,10 +62,25 @@ export type WorkerConfig = ReturnType<typeof loadWorkerConfig>;
 export function loadApiConfig(environment: NodeJS.ProcessEnv | Record<string, string | undefined>) {
   const parsed = ApiEnvSchema.parse(environment);
   return {
+    databaseUrl: parsed.DATABASE_URL,
     environment: parsed.NODE_ENV,
     host: parsed.API_HOST,
     logLevel: parsed.LOG_LEVEL,
     port: parsed.API_PORT,
+    rateLimit: {
+      requests: parsed.API_RATE_LIMIT_REQUESTS,
+      windowSeconds: parsed.API_RATE_LIMIT_WINDOW_SECONDS,
+    },
+    rawPayload: {
+      approvedEndpointHosts: (parsed.RAW_PAYLOAD_APPROVED_ENDPOINT_HOSTS ?? "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean),
+      bucket: parsed.RAW_PAYLOAD_BUCKET,
+      endpoint: parsed.RAW_PAYLOAD_ENDPOINT,
+      region: parsed.RAW_PAYLOAD_REGION,
+    },
+    redisUrl: parsed.REDIS_URL,
     version: parsed.APP_VERSION,
   } as const;
 }
@@ -81,5 +116,13 @@ export function toRedactedConfig(config: ApiConfig | WorkerConfig) {
       redisUrl: "[CONFIGURED]",
     };
   }
-  return config;
+  return {
+    ...config,
+    databaseUrl: config.databaseUrl ? "[CONFIGURED]" : undefined,
+    rawPayload: {
+      ...config.rawPayload,
+      endpoint: config.rawPayload.endpoint ? "[CONFIGURED]" : undefined,
+    },
+    redisUrl: config.redisUrl ? "[CONFIGURED]" : undefined,
+  };
 }

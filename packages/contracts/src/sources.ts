@@ -151,6 +151,10 @@ export const SourceExecutionContextSchema = z
   })
   .strict();
 
+export const SourceListResponseSchema = z
+  .object({ items: z.array(SourceExecutionContextSchema) })
+  .strict();
+
 export const SourceOperationSchema = z.enum(["poll", "publish", "replace", "remove"]);
 export const SourceIneligibilityReasonSchema = z.enum([
   "source_missing",

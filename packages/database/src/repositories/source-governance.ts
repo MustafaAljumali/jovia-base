@@ -192,4 +192,12 @@ export class PostgresSourceGovernanceRepository implements SourcePolicyRepositor
       LIMIT ${limit}
     `;
   }
+
+  async listSources(limit = 100): Promise<readonly SourceExecutionContext[]> {
+    const rows = await this.sql<{ code: string }[]>`
+      SELECT code FROM source_registry ORDER BY code LIMIT ${limit}
+    `;
+    const contexts = await Promise.all(rows.map(({ code }) => this.getExecutionContext(code)));
+    return contexts.filter((context): context is SourceExecutionContext => context !== undefined);
+  }
 }

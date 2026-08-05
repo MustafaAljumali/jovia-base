@@ -41,4 +41,20 @@ describe("environment configuration", () => {
     expect(loadApiConfig({ API_PORT: "3100" }).port).toBe(3100);
     expect(() => loadApiConfig({ API_PORT: "70000" })).toThrow(/API_PORT/u);
   });
+
+  it("requires database, Redis and durable raw storage for the production API", () => {
+    expect(() => loadApiConfig({ NODE_ENV: "production" })).toThrow(/DATABASE_URL/u);
+    expect(
+      loadApiConfig({
+        NODE_ENV: "production",
+        ...workerBase,
+        RAW_PAYLOAD_BUCKET: "jovia-raw-production",
+        RAW_PAYLOAD_REGION: "eu-central-1",
+      }),
+    ).toMatchObject({
+      databaseUrl: workerBase.DATABASE_URL,
+      redisUrl: workerBase.REDIS_URL,
+      rawPayload: { bucket: "jovia-raw-production", region: "eu-central-1" },
+    });
+  });
 });

@@ -7,9 +7,15 @@
     "start": "node dist/server.js"
   },
   "dependencies": {
+    "@jovia/auth": "workspace:*",
     "@jovia/config": "workspace:*",
     "@jovia/contracts": "workspace:*",
+    "@jovia/database": "workspace:*",
+    "@jovia/object-storage": "workspace:*",
     "@jovia/observability": "workspace:*",
-    "fastify": "5.11.2"
+    "@jovia/opportunity-ingestion": "workspace:*",
+    "fastify": "5.11.2",
+    "ioredis": "6.0.0",
+    "zod": "4.4.3"
   }
 }

@@ -1,13 +1,14 @@
 import { z } from "zod";
 
 import { ProblemDetailsSchema } from "./errors.js";
+import { IngestionRunListResponseSchema } from "./ingestion.js";
 import {
   CanonicalOpportunitySchema,
   DirectOpportunityCommandSchema,
   OpportunityListQuerySchema,
   OpportunityListResponseSchema,
 } from "./opportunities.js";
-import { SourceExecutionContextSchema } from "./sources.js";
+import { SourceExecutionContextSchema, SourceListResponseSchema } from "./sources.js";
 
 function schema(value: z.ZodType) {
   return z.toJSONSchema(value, { target: "draft-2020-12" });
@@ -91,24 +92,64 @@ export function createOpportunityOpenApiDocument(): Readonly<Record<string, unkn
         get: {
           operationId: "getOpportunity",
           security,
-          responses: { "200": { description: "Opportunity" }, "404": problemResponse },
+          responses: {
+            "200": { description: "Opportunity" },
+            "401": problemResponse,
+            "403": problemResponse,
+            "404": problemResponse,
+            "429": problemResponse,
+          },
         },
         put: {
           operationId: "replaceOpportunity",
           security,
+          parameters: [
+            { name: "Idempotency-Key", in: "header", required: true, schema: { type: "string" } },
+          ],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/DirectOpportunityCommand" },
+              },
+            },
+          },
           responses: {
             "200": { description: "Replaced opportunity" },
+            "401": problemResponse,
             "403": problemResponse,
             "404": problemResponse,
+            "409": problemResponse,
+            "422": problemResponse,
+            "429": problemResponse,
           },
         },
         delete: {
           operationId: "removeOpportunity",
           security,
+          parameters: [
+            { name: "Idempotency-Key", in: "header", required: true, schema: { type: "string" } },
+            {
+              name: "X-Publisher-Organization-Id",
+              in: "header",
+              required: true,
+              schema: { type: "string", format: "uuid" },
+            },
+            {
+              name: "X-Publishing-Terms-Version",
+              in: "header",
+              required: true,
+              schema: { type: "string" },
+            },
+          ],
           responses: {
             "204": { description: "Opportunity tombstoned" },
+            "401": problemResponse,
             "403": problemResponse,
             "404": problemResponse,
+            "409": problemResponse,
+            "422": problemResponse,
+            "429": problemResponse,
           },
         },
       },
@@ -117,8 +158,15 @@ export function createOpportunityOpenApiDocument(): Readonly<Record<string, unkn
           operationId: "listOpportunitySources",
           security,
           responses: {
-            "200": { description: "Exact policy and runtime states" },
+            "200": {
+              description: "Exact policy and runtime states",
+              content: {
+                "application/json": { schema: { $ref: "#/components/schemas/SourceListResponse" } },
+              },
+            },
+            "401": problemResponse,
             "403": problemResponse,
+            "429": problemResponse,
           },
         },
       },
@@ -126,14 +174,31 @@ export function createOpportunityOpenApiDocument(): Readonly<Record<string, unkn
         get: {
           operationId: "listIngestionRuns",
           security,
-          responses: { "200": { description: "Ingestion history" }, "403": problemResponse },
+          responses: {
+            "200": {
+              description: "Ingestion history",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/IngestionRunListResponse" },
+                },
+              },
+            },
+            "401": problemResponse,
+            "403": problemResponse,
+            "429": problemResponse,
+          },
         },
       },
       "/v1/openapi.json": {
         get: {
           operationId: "getOpportunityOpenApi",
           security,
-          responses: { "200": { description: "This OpenAPI document" }, "401": problemResponse },
+          responses: {
+            "200": { description: "This OpenAPI document" },
+            "401": problemResponse,
+            "403": problemResponse,
+            "429": problemResponse,
+          },
         },
       },
     },
@@ -146,6 +211,8 @@ export function createOpportunityOpenApiDocument(): Readonly<Record<string, unkn
         OpportunityListQuery: schema(OpportunityListQuerySchema),
         OpportunityListResponse: schema(OpportunityListResponseSchema),
         SourceExecutionContext: schema(SourceExecutionContextSchema),
+        SourceListResponse: schema(SourceListResponseSchema),
+        IngestionRunListResponse: schema(IngestionRunListResponseSchema),
       },
     },
   };

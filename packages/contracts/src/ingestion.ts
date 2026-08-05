@@ -99,6 +99,24 @@ export const OperationalMetricsSnapshotSchema = z.object({
   capturedAt: z.iso.datetime(),
 });
 
+export const IngestionRunSummarySchema = z
+  .object({
+    id: z.uuid(),
+    sourceCode: SourceCodeSchema,
+    policyId: z.uuid(),
+    status: IngestionRunOutcomeSchema.or(z.literal("running")),
+    pagesCommitted: z.number().int().nonnegative(),
+    recordsCommitted: z.number().int().nonnegative(),
+    correlationId: z.string().min(1),
+    startedAt: z.iso.datetime(),
+    finishedAt: z.iso.datetime().nullable(),
+  })
+  .strict();
+
+export const IngestionRunListResponseSchema = z
+  .object({ items: z.array(IngestionRunSummarySchema) })
+  .strict();
+
 export type HimalayasCheckpoint = z.infer<typeof HimalayasCheckpointSchema>;
 export type IngestionCheckpoint = z.infer<typeof IngestionCheckpointSchema>;
 export type RawPayloadReference = z.infer<typeof RawPayloadReferenceSchema>;
