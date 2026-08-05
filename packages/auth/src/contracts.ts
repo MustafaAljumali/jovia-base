@@ -4,6 +4,7 @@ export type Capability =
   | "source:read"
   | "source:enable"
   | "opportunity:read"
+  | "opportunity:publish"
   | "proposal:generate"
   | "admin:operate";
 

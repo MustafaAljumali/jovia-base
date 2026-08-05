@@ -8,8 +8,12 @@
   },
   "include": ["src/**/*.ts"],
   "references": [
+    { "path": "../../packages/auth" },
     { "path": "../../packages/config" },
     { "path": "../../packages/contracts" },
-    { "path": "../../packages/observability" }
+    { "path": "../../packages/database" },
+    { "path": "../../packages/object-storage" },
+    { "path": "../../packages/observability" },
+    { "path": "../../services/opportunity-ingestion" }
   ]
 }

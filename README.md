@@ -24,7 +24,7 @@ Read these before changing code or architecture:
 
 1. `Jovia_Engineering_Constitution_v2.0.md`
 2. `Jovia_Strategic_Product_Vision.md`
-3. `Jovia_Governance_and_Business_Operations.md.md`
+3. `Jovia_Governance_and_Business_Operations.md`
 4. Accepted files under `docs/adr/`
 5. `Jovia_Technical_Research_and_Integration_Blueprint.docx`
 
@@ -63,6 +63,13 @@ pnpm db:check
 
 Run `pnpm dev:web`, `pnpm dev:api`, and `pnpm dev:worker` in separate terminals.
 The public health contract is `GET http://127.0.0.1:4000/v1/health`.
+
+Batch 2 Opportunity Core documentation begins at
+`docs/knowledge-base/opportunity-core-lawful-discovery.md`. Himalayas is a real,
+contract-tested connector but is disabled by default; it must not be represented as
+connected. Jovia Direct is the enabled first-party publishing source. All other
+named external sources remain unimplemented and not connected in this batch. The
+review evidence matrix is `docs/delivery/batch-2-opportunity-core-evidence.md`.
 
 See `docs/operations/local-development.md` for the complete procedure and
 `docs/security/quality-gates.md` for enforced CI policy. Real credentials never

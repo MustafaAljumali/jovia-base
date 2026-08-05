@@ -7,5 +7,12 @@
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
   "include": ["src/**/*.ts"],
-  "references": [{ "path": "../../packages/config" }, { "path": "../../packages/observability" }]
+  "references": [
+    { "path": "../../packages/config" },
+    { "path": "../../packages/contracts" },
+    { "path": "../../packages/database" },
+    { "path": "../../packages/object-storage" },
+    { "path": "../../packages/observability" },
+    { "path": "../../services/opportunity-ingestion" }
+  ]
 }

@@ -430,7 +430,7 @@ This Accepted ADR remains valid while the following conditions continue to hold:
 
 - `Jovia_Engineering_Constitution_v2.0.md`
 - `Jovia_Strategic_Product_Vision.md`
-- `Jovia_Governance_and_Business_Operations.md.md`
+- `Jovia_Governance_and_Business_Operations.md`
 - `Jovia_Technical_Research_and_Integration_Blueprint.docx`
 - `Jovia_Product_Experience_Design_Phase_2.pdf`
 - Product Owner decision: “Create a new production-grade monorepo inside the

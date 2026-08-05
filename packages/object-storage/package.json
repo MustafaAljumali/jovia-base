@@ -1,0 +1,17 @@
+{
+  "name": "@jovia/object-storage",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1095.0",
+    "@jovia/opportunity-ingestion": "workspace:*"
+  }
+}

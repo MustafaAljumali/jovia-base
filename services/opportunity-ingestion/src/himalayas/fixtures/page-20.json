@@ -1,0 +1,31 @@
+{
+  "comments": "Official-shape contract fixture captured for schema testing; not live data.",
+  "updatedAt": 1785888000000,
+  "offset": 20,
+  "limit": 20,
+  "totalCount": 21,
+  "jobs": [
+    {
+      "title": "Product Designer",
+      "excerpt": "Design thoughtful remote experiences.",
+      "companyName": "Example Design",
+      "companySlug": "example-design",
+      "companyLogo": "https://images.example.com/design.png",
+      "employmentType": "Full Time",
+      "minSalary": null,
+      "maxSalary": null,
+      "seniority": ["Mid-level", "Senior"],
+      "currency": "EUR",
+      "salaryPeriod": "annual",
+      "locationRestrictions": [],
+      "timezoneRestrictions": [],
+      "categories": ["Product Design", "UX Design"],
+      "parentCategories": ["Design"],
+      "description": "<p>Design a premium remote product.</p>",
+      "pubDate": 1785801600000,
+      "expiryDate": 1788480000000,
+      "applicationLink": "https://careers.example.com/jobs/product-designer",
+      "guid": "example-design-product-designer-1"
+    }
+  ]
+}

@@ -11,6 +11,6 @@
     }
   },
   "dependencies": {
-    "@jovia/opportunity-ingestion": "workspace:*"
+    "@jovia/contracts": "workspace:*"
   }
 }

@@ -1,5 +1,27 @@
 # Jovia Knowledge Base - Combined Content
 
+## Authoritative Batch 2 Implementation Status — 2026-08-05
+
+The Product Owner-approved source of truth for Opportunity Core & Lawful Discovery
+is `docs/superpowers/specs/2026-08-05-opportunity-core-lawful-discovery-design.md`.
+The implemented architecture, exact source evidence, API, database, operations, and
+security references are:
+
+- `docs/architecture/opportunity-core-lawful-discovery.md`
+- `docs/legal/sources/himalayas-2026-08-05.md`
+- `docs/legal/sources/jovia-direct-2026-08-05.md`
+- `docs/api/opportunities-v1.md`
+- `docs/database/0001-opportunity-core.md`
+- `docs/operations/opportunity-discovery-runbook.md`
+- `docs/security/opportunity-ingestion-threat-model.md`
+
+Himalayas is a real connector implemented against its official public API and is
+disabled by default; it is not connected at runtime. Jovia Direct is the enabled
+first-party publishing source. Every other named source is not connected and not
+implemented by Batch 2. Future AI scoring, matching, memory, recommendation, and
+notification intelligence consume this foundation but are not claimed as complete
+here.
+
 
 
 # Jovia-KnowledgeBase/JOVIA-CONSTITUTION.md

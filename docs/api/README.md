@@ -17,3 +17,6 @@ OpenAPI generation must derive from the same runtime schemas used for validation
 Within `/v1`, additive optional fields are compatible; removing fields, changing
 meaning, narrowing accepted values, or changing error semantics requires a new API
 version and migration window.
+
+See `opportunities-v1.md` for Batch 2 route capabilities, ownership, idempotency,
+cursor, attribution, rate-limit, and error contracts.

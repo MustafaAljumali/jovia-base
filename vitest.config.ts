@@ -23,6 +23,9 @@ export default defineConfig({
       "@jovia/observability": fileURLToPath(
         new URL("./packages/observability/src/index.ts", import.meta.url),
       ),
+      "@jovia/object-storage": fileURLToPath(
+        new URL("./packages/object-storage/src/index.ts", import.meta.url),
+      ),
       "@jovia/security": fileURLToPath(
         new URL("./packages/security/src/index.ts", import.meta.url),
       ),
@@ -58,6 +61,7 @@ export default defineConfig({
         "packages/database/scripts/**",
         "packages/database/src/client.ts",
         "packages/database/src/repositories/**",
+        "packages/database/src/schema/**",
       ],
       include: ["apps/**/*.{ts,tsx}", "packages/**/*.ts", "services/**/*.ts"],
       provider: "v8",

@@ -1,5 +1,25 @@
 import { AppError, type SourceRegistration } from "@jovia/contracts";
 
+export * from "./ports.js";
+export * from "./source-eligibility.js";
+export * from "./deduplication.js";
+export * from "./connector/circuit-breaker.js";
+export * from "./connector/contracts.js";
+export * from "./connector/rate-limiter.js";
+export * from "./connector/retry.js";
+export * from "./connector/runner.js";
+export * from "./normalization/compensation.js";
+export * from "./normalization/html.js";
+export * from "./normalization/iso.js";
+export * from "./normalization/normalize.js";
+export * from "./normalization/signature.js";
+export * from "./himalayas/connector.js";
+export * from "./himalayas/schema.js";
+export * from "./lifecycle/service.js";
+export * from "./outbox/dispatcher.js";
+export * from "./publishing/service.js";
+export * from "./quarantine/service.js";
+
 export interface OpportunityCandidate {
   externalId: string;
   sourceCode: string;

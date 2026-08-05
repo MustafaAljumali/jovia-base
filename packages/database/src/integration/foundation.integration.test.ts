@@ -33,8 +33,8 @@ describe.runIf(enabled)("foundation infrastructure", () => {
 
     const repository = new SourceRegistryRepository(database.db);
     const source = SourceRegistrationSchema.parse({
-      code: "himalayas",
-      name: "Himalayas",
+      code: "integration-test-source",
+      name: "Integration Test Source",
       mechanism: "official_api",
       legalPosture: "approved",
       termsUrl: "https://himalayas.app/terms",
@@ -46,7 +46,9 @@ describe.runIf(enabled)("foundation infrastructure", () => {
       lastVerifiedAt: "2026-08-04T00:00:00.000Z",
     });
     await repository.save(source);
-    expect(await repository.findByCode("himalayas")).toMatchObject({ enabled: false });
+    expect(await repository.findByCode("integration-test-source")).toMatchObject({
+      enabled: false,
+    });
     expect(await redis.ping()).toBe("PONG");
   });
 });
