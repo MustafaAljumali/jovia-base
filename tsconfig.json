@@ -17,6 +17,7 @@
     { "path": "packages/ui" },
     { "path": "packages/testing" },
     { "path": "packages/database" },
+    { "path": "packages/object-storage" },
     { "path": "packages/ai" },
     { "path": "packages/auth" },
     { "path": "services/opportunity-ingestion" },
