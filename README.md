@@ -68,7 +68,8 @@ Batch 2 Opportunity Core documentation begins at
 `docs/knowledge-base/opportunity-core-lawful-discovery.md`. Himalayas is a real,
 contract-tested connector but is disabled by default; it must not be represented as
 connected. Jovia Direct is the enabled first-party publishing source. All other
-named external sources remain unimplemented and not connected in this batch.
+named external sources remain unimplemented and not connected in this batch. The
+review evidence matrix is `docs/delivery/batch-2-opportunity-core-evidence.md`.
 
 See `docs/operations/local-development.md` for the complete procedure and
 `docs/security/quality-gates.md` for enforced CI policy. Real credentials never

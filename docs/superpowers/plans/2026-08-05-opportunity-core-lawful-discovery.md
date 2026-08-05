@@ -2,6 +2,12 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Execution status (2026-08-05):** Tasks 1–11 are implemented on pull request
+[#9](https://github.com/MustafaAljumali/jovia-base/pull/9). The authoritative
+completion matrix is `docs/delivery/batch-2-opportunity-core-evidence.md`; the
+unchecked boxes below preserve the original approved step-by-step plan rather than
+acting as the current status ledger.
+
 **Goal:** Deliver Jovia's governed opportunity core with executable lawful-source policy, the real Himalayas connector, first-party publishing, canonical normalization and deterministic deduplication, resilient lifecycle processing, versioned authorized APIs, persistence, observability, and operational evidence.
 
 **Architecture:** Keep the accepted modular monolith. `@jovia/contracts` owns versioned runtime contracts; `@jovia/opportunity-ingestion` owns application policies and ports; PostgreSQL, Redis, S3-compatible storage, HTTP, Fastify, and BullMQ remain adapters at composition roots. Canonical opportunities, immutable provenance, audit rows, checkpoints, and outbox events commit atomically, while `DeduplicationStrategy` and versioned outbox contracts preserve extension points for AI scoring, matching, memory, recommendations, and notifications.
