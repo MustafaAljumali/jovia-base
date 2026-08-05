@@ -15,7 +15,9 @@
     "db:migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
+    "@jovia/auth": "workspace:*",
     "@jovia/contracts": "workspace:*",
+    "@jovia/opportunity-ingestion": "workspace:*",
     "drizzle-orm": "0.45.2",
     "postgres": "3.4.9"
   },

@@ -8,6 +8,7 @@ describe("forward-only migration discovery", () => {
     expect(migrations.map(({ name }) => name)).toEqual([
       "0000_foundation.sql",
       "0001_opportunity_core.sql",
+      "0002_outbox_claims.sql",
     ]);
     for (const migration of migrations) {
       expect(migration.sha256).toMatch(/^[a-f0-9]{64}$/u);

@@ -26,6 +26,7 @@ describe.runIf(enabled)("opportunity core migration", () => {
     expect(migrations.map(({ name }) => name)).toEqual([
       "0000_foundation.sql",
       "0001_opportunity_core.sql",
+      "0002_outbox_claims.sql",
     ]);
     expect(migrations.every(({ sha256 }) => /^[a-f0-9]{64}$/u.test(sha256))).toBe(true);
   });
