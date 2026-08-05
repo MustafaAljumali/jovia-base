@@ -15,6 +15,10 @@ export * from "./normalization/normalize.js";
 export * from "./normalization/signature.js";
 export * from "./himalayas/connector.js";
 export * from "./himalayas/schema.js";
+export * from "./lifecycle/service.js";
+export * from "./outbox/dispatcher.js";
+export * from "./publishing/service.js";
+export * from "./quarantine/service.js";
 
 export interface OpportunityCandidate {
   externalId: string;

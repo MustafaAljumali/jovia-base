@@ -32,6 +32,7 @@ export const RawPayloadReferenceSchema = z
     objectKey: z.string().min(1),
     sha256: Sha256Schema,
     byteLength: z.number().int().nonnegative(),
+    contentType: z.string().min(1).optional(),
     storedAt: z.iso.datetime(),
   })
   .strict();
