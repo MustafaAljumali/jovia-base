@@ -3,7 +3,10 @@ import type { Authenticator } from "@jovia/auth";
 import Fastify, { type FastifyBaseLogger, type FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 
-import { registerAuthentication } from "./plugins/authentication.js";
+import {
+  registerAuthentication,
+  type PreAuthenticationRateLimitOptions,
+} from "./plugins/authentication.js";
 import { registerApiMetrics, type ApiMetricsPort } from "./plugins/metrics.js";
 import { registerRateLimit, type ApiRateLimiter } from "./plugins/rate-limit.js";
 import { registerRequestContext } from "./plugins/request-context.js";
@@ -30,6 +33,7 @@ export interface ApiAppDependencies {
   clock?: { now(): Date };
   logger?: FastifyBaseLogger;
   opportunityCore?: ApiOpportunityCoreDependencies;
+  preAuthenticationRateLimit?: PreAuthenticationRateLimitOptions;
   configure?: (app: FastifyInstance) => void;
 }
 
@@ -41,7 +45,11 @@ export async function createApiApp(dependencies: ApiAppDependencies): Promise<Fa
   const clock = dependencies.clock ?? { now: () => new Date() };
   if (dependencies.opportunityCore) {
     registerApiMetrics(app, dependencies.opportunityCore.metrics, clock);
-    registerAuthentication(app, dependencies.opportunityCore.authenticator);
+    registerAuthentication(
+      app,
+      dependencies.opportunityCore.authenticator,
+      dependencies.preAuthenticationRateLimit,
+    );
     registerRateLimit(app, dependencies.opportunityCore.rateLimiter, clock);
   }
   registerHealthRoute(app, {

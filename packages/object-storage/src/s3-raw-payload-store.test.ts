@@ -177,4 +177,20 @@ describe("S3RawPayloadStore", () => {
       }),
     ).rejects.toThrow("segment is empty");
   });
+
+  it("trims arbitrarily long separator runs in linear time before bounding key segments", async () => {
+    const { commands, store } = harness();
+    const separators = "-".repeat(50_000);
+    await store.put({
+      sourceCode: `${separators}himalayas${separators}`,
+      runId: `${separators}run-1${separators}`,
+      pageSequence: 1,
+      fetchedAt: "2026-08-05T00:00:00.000Z",
+      contentType: "application/octet-stream",
+      bytes: new Uint8Array([1]),
+    });
+    expect(commands[0]?.input.Key).toMatch(
+      /^himalayas\/2026\/08\/05\/run-1\/page-000001-[a-f0-9]{64}\.bin$/u,
+    );
+  });
 });

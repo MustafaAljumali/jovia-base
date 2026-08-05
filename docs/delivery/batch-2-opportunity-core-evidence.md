@@ -37,7 +37,7 @@ evidence, not a claim that a disabled source or test adapter is connected.
 | Quarantine | `quarantine/service.test.ts` covers safe metadata, immutable raw reference, admin capability, changed mapper version, missing record, and one-time release. Runner contracts cover schema-failure quarantine. |
 | Freshness and operational metrics | `apps/worker/src/jobs/jobs.test.ts` and `apps/worker/src/adapters/opportunity-adapters.test.ts` cover bounded source freshness, circuit, quarantine, tombstone, outbox, latency, and eligibility labels. Dynamic/unbounded labels are rejected. |
 | Database migrations | `packages/database/src/integration/opportunity-core.integration.test.ts` proves fresh/repeated application, immutable checksums, fail-closed digest mismatch, foreign-key/partial indexes, and exact source seed state. `repository-contracts.integration.test.ts` proves rollback, concurrency, lifecycle, auth, and outbox behavior. |
-| API contracts and authorization | `apps/api/src/routes/opportunities.contract.test.ts` covers strict Zod input/output, OpenAPI 3.1 coverage, opaque bearer failure, capability and tenant denial, actor/route rate limiting, keyset cursors, versioned routes, stable problem codes, and admin contracts. |
+| API contracts and authorization | `apps/api/src/routes/opportunities.contract.test.ts` covers strict Zod input/output, OpenAPI 3.1 coverage, opaque bearer failure, pre-authentication IP limiting before database lookup, capability and tenant denial, distributed actor/route rate limiting, keyset cursors, versioned routes, stable problem codes, and admin contracts. |
 
 ## Quality-gate evidence
 
@@ -49,8 +49,8 @@ The exact locked toolchain is Node `24.14.x` and pnpm `11.20.0`.
 | Formatting | Passed: every matched file conforms to Prettier. |
 | ESLint | Passed with zero warnings. |
 | Type checking | Passed: composite TypeScript build and web no-emit check. |
-| Unit and contract tests | Passed: 46 files, 156 tests; 10 PostgreSQL-only tests intentionally skipped in the local unit project. |
-| Coverage | Passed: statements 90.58%, branches 80.02%, functions 92.30%, lines 92.57%. Thresholds were not lowered. Declarative Drizzle schema files are excluded; their actual migrations are exercised in PostgreSQL integration tests. |
+| Unit and contract tests | Passed: 46 files, 158 tests; 10 PostgreSQL-only tests intentionally skipped in the local unit project. |
+| Coverage | Passed: statements 90.68%, branches 80.27%, functions 92.30%, lines 92.64%. Thresholds were not lowered. Declarative Drizzle schema files are excluded; their actual migrations are exercised in PostgreSQL integration tests. |
 | Production build | Passed: TypeScript composite build and Vite production web bundle. |
 | Architecture policy | Passed: provider, AWS SDK, database, web/server, Manus, mutable-action, and downstream ingestion boundaries. |
 | Secret policy | Passed; no private signing material, credential, token, or raw payload is present. |
@@ -58,6 +58,13 @@ The exact locked toolchain is Node `24.14.x` and pnpm `11.20.0`.
 | PostgreSQL/Redis integration | Passed in [Foundation CI #21](https://github.com/MustafaAljumali/jovia-base/actions/runs/30964992452), including migrations, database checks, repository contracts, direct lifecycle, expiry/reconciliation, checkpoint, auth, and outbox. |
 | Remote quality, gitleaks, CodeQL | Passed in [Foundation CI #21](https://github.com/MustafaAljumali/jovia-base/actions/runs/30964992452). |
 | Pull-request dependency review | Passed in [PR CI](https://github.com/MustafaAljumali/jovia-base/actions/runs/30965082051). |
+
+GitHub Advanced Security subsequently identified two high-severity review findings:
+an authentication database lookup without a recognized pre-authentication limiter,
+and a polynomial end-trimming regular expression. The remediation adds a
+CodeQL-recognized limiter before bearer verification and replaces regex trimming
+with bounded linear character scanning. Both paths have regression tests; the PR
+must not merge until the follow-up Code Scanning result closes both alerts.
 
 ## Signing evidence
 

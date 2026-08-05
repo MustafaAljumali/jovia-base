@@ -231,6 +231,27 @@ describe("opportunity v1 API contracts", () => {
     await app.close();
   });
 
+  it("rate limits unauthenticated database lookups before bearer verification", async () => {
+    const dependencies = core(actor("opportunity:read"));
+    const app = await createApiApp({
+      config: { version: "test" },
+      opportunityCore: dependencies,
+      preAuthenticationRateLimit: { points: 1, durationSeconds: 60 },
+    });
+    const request = {
+      method: "GET" as const,
+      url: "/v1/opportunities",
+      headers: { authorization: "Bearer test-token" },
+    };
+    expect((await app.inject(request)).statusCode).toBe(200);
+    const blocked = await app.inject(request);
+    expect(blocked.statusCode).toBe(429);
+    expect(blocked.headers["retry-after"]).toBe("60");
+    expect(blocked.json()).toMatchObject({ code: "rate_limit_exceeded" });
+    expect(dependencies.authenticator.authenticate).toHaveBeenCalledOnce();
+    await app.close();
+  });
+
   it("publishes an OpenAPI 3.1 contract covering every registered protected operation", async () => {
     const app = await createApiApp({
       config: { version: "test" },

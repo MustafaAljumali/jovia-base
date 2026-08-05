@@ -29,9 +29,12 @@ rate limited, correlated, measured, and serialized from shared Zod contracts.
 | `GET /v1/admin/ingestion-runs` | `admin:operate` | Bounded newest-first history |
 
 Bearer values are opaque and are SHA-256 hashed before database lookup. Redis rate
-keys use stable actor ID and route template, never token or IP. A `429` response
-includes `Retry-After`. Successful opportunity responses always include source
-attribution, original URL, lifecycle/deletion state, and complete provenance.
+keys use stable actor ID and route template, never token or IP. A separate bounded
+per-instance IP limiter rejects abusive requests before bearer verification can
+reach the session database; the actor/route Redis limiter remains the distributed
+post-authentication control. A `429` response includes `Retry-After`. Successful
+opportunity responses always include source attribution, original URL,
+lifecycle/deletion state, and complete provenance.
 
 Errors use `application/problem+json` with RFC 9457 fields, stable Jovia `code`, and
 `correlationId`. Stable codes include `authentication_required`,

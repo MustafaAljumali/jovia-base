@@ -74,6 +74,9 @@ importers:
       ioredis:
         specifier: 6.0.0
         version: 6.0.0(supports-color@7.2.0)
+      rate-limiter-flexible:
+        specifier: 11.1.0
+        version: 11.1.0
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -2062,6 +2065,9 @@ packages:
 
   quick-format-unescaped@4.0.4:
     resolution: {integrity: sha512-tYC1Q1hgyRuHgloV/YXs2w15unPVh8qfu/qCTfhTYamaw7fyhumKa2yGpdSo87vY32rIclj+4fWYQXUMs9EHvg==}
+
+  rate-limiter-flexible@11.1.0:
+    resolution: {integrity: sha512-lyyC0SqKz+dE5JoHZ4JMqdrM3LSZKBxzuAFAyKCYAnmHnPz/Rb6iDquxoL4CMipDXoR0G+QRhOzYWL3JKihbNw==}
 
   react-dom@19.2.8:
     resolution: {integrity: sha512-rVprimfGBG3DR+Tq0IQG2DT5PxKth1WIGDmj5yPmlzr4YBe7uyE+Du4oVqTDXZSHGGGXRtTJEGSSePyQCMBglQ==}
@@ -4070,6 +4076,8 @@ snapshots:
   punycode@2.3.1: {}
 
   quick-format-unescaped@4.0.4: {}
+
+  rate-limiter-flexible@11.1.0: {}
 
   react-dom@19.2.8(react@19.2.8):
     dependencies:

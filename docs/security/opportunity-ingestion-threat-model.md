@@ -23,6 +23,7 @@ last_verified: 2026-08-05
 | Stored XSS | Allowlist HTML sanitizer, safe URL protocols, plain-text derivation, normalization tests |
 | Credential or payload leakage | SDK isolated to object-storage package; logger redaction; private/no-store objects; no bodies in metrics/docs |
 | Cross-tenant publication | Opaque session hash, explicit capability, organization membership/current terms, tenant mutation predicate |
+| Authentication lookup exhaustion | Per-instance IP limiter before bearer database lookup plus distributed actor/route Redis limit after authentication |
 | Replay/idempotency abuse | Actor-scoped key plus request digest; conflict on changed body; unique source identity and event key |
 | Duplicate or lost events | Opportunity change and outbox insert are atomic; expiring claim token; attempt history; publish acknowledgement before mark |
 | Race in deduplication | Transaction-scoped advisory signature lock and deterministic canonical priority |

@@ -59,7 +59,11 @@ export function validateRawPayloadStorageConfig(
 
 function segment(value: string): string {
   const normalized = value.toLocaleLowerCase("en").replace(/[^a-z0-9._-]+/gu, "-");
-  const trimmed = normalized.replace(/^-+|-+$/gu, "");
+  let start = 0;
+  let end = normalized.length;
+  while (start < end && normalized.charCodeAt(start) === 45) start += 1;
+  while (end > start && normalized.charCodeAt(end - 1) === 45) end -= 1;
+  const trimmed = normalized.slice(start, end);
   if (!trimmed) throw new Error("raw payload object key segment is empty");
   return trimmed.slice(0, 128);
 }

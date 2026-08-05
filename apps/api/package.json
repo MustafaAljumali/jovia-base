@@ -16,6 +16,7 @@
     "@jovia/opportunity-ingestion": "workspace:*",
     "fastify": "5.11.2",
     "ioredis": "6.0.0",
+    "rate-limiter-flexible": "11.1.0",
     "zod": "4.4.3"
   }
 }
